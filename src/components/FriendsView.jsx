@@ -17,7 +17,7 @@ const itemVariants = {
 };
 
 // ── Main Component ──────────────────────────────────────────────────
-const FriendsView = () => {
+const FriendsView = ({ onStartCall }) => {
     const [activeTab, setActiveTab] = useState('En ligne');
     const [addInput, setAddInput] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
@@ -453,7 +453,7 @@ const FriendsView = () => {
                                                 avatar: friend.avatar,
                                                 bio: friend.bio,
                                                 banner: '#5865F2',
-                                                status: friend.status === 'En ligne' ? 'online' : 'offline',
+                                                status: friend.status,
                                             });
                                             setPopoutPosition({ top, left });
                                         }}
@@ -573,7 +573,11 @@ const FriendsView = () => {
                                     icon={<Volume2 size={16} color="var(--text-muted)" />}
                                     label="Appeler"
                                     onClick={() => {
-                                        showToast('Appel vocal lancé !', 'success');
+                                        if (onStartCall) {
+                                            onStartCall(contextMenu.friendId);
+                                        } else {
+                                            showToast('Appel vocal lancé !', 'success');
+                                        }
                                         setContextMenu(null);
                                     }}
                                 />

@@ -919,12 +919,12 @@ html,
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #0a0a0c 0%, #111214 100%);
-  min-height: 320px;
-  max-height: 55vh;
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: 100;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
+  border-radius: 28px;
+  /* match the container radius */
 }
 
 .call-content-area {

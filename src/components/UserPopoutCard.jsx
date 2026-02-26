@@ -80,8 +80,11 @@ const UserPopoutCard = ({ user, position, onClose }) => {
                         <div style={{
                             position: 'absolute', bottom: -2, right: -2,
                             width: '16px', height: '16px', borderRadius: '50%',
-                            backgroundColor: user.status === 'online' ? 'var(--success-color)' : 'var(--text-muted)',
-                            border: '3px solid var(--bg-primary)'
+                            backgroundColor: (user?.status === 'Occupé' ? 'var(--danger-color)' :
+                                user?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
+                                    (user?.status === 'Hors ligne' || user?.status === 'offline') ? 'transparent' : 'var(--success-color)'),
+                            border: '3px solid var(--bg-primary)',
+                            ...((user?.status === 'Hors ligne' || user?.status === 'offline') ? { border: '3px solid var(--text-muted)', backgroundColor: 'var(--bg-primary)' } : {})
                         }}></div>
                     </div>
                 </div>

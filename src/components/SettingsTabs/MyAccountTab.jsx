@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Key } from 'lucide-react';
+import { Shield, Key, Camera } from 'lucide-react';
 import InlineModal from '../InlineModal';
 
 const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
     const [showEmail, setShowEmail] = useState(false);
+    const avatarInputRef = useRef(null);
+
+    // Edit Mode State
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [editName, setEditName] = useState(userProfile?.name || '');
+    const [editBio, setEditBio] = useState(userProfile?.bio || '');
+    const [editStatus, setEditStatus] = useState(userProfile?.status || 'En ligne');
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const objectUrl = URL.createObjectURL(file);
+            setUserProfile({ ...userProfile, avatar: objectUrl });
+        }
+    };
 
     // Modal states
     const [usernameModal, setUsernameModal] = useState(false);
@@ -12,8 +27,17 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
     const [passwordModal, setPasswordModal] = useState(false);
     const [phoneModal, setPhoneModal] = useState(false);
     const [twoFaModal, setTwoFaModal] = useState(false);
-    const [deleteModal, setDeleteModal] = useState(false);
     const [successModal, setSuccessModal] = useState({ open: false, title: '', description: '' });
+
+    const handleSaveProfile = () => {
+        setUserProfile({
+            ...userProfile,
+            name: editName,
+            bio: editBio,
+            status: editStatus
+        });
+        setIsEditingProfile(false);
+    };
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -35,19 +59,176 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
 
                 <div style={{ padding: '0 16px 16px 16px', position: 'relative' }}>
                     {/* Avatar */}
-                    <div style={{
-                        width: '80px', height: '80px', borderRadius: '50%',
-                        border: '6px solid var(--bg-secondary)',
-                        backgroundImage: `url("${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}")`,
-                        backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-                        marginTop: '-40px', marginBottom: '8px'
-                    }}></div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '-40px', marginBottom: '8px' }}>
+                        <div
+                            style={{
+                                width: '80px', height: '80px', borderRadius: '50%',
+                                border: '6px solid var(--bg-secondary)',
+                                backgroundImage: `url("${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}")`,
+                                backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+                                position: 'relative', cursor: 'pointer', flexShrink: 0
+                            }}
+                            onClick={() => avatarInputRef.current?.click()}
+                        >
+                            <div style={{
+                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '50%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                opacity: 0, transition: 'opacity 0.2s'
+                            }}
+                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                            >
+                                <Camera color="white" size={20} />
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => avatarInputRef.current?.click()}
+                            style={{
+                                background: 'var(--accent-color)', color: 'white', border: 'none',
+                                padding: '6px 14px', borderRadius: '4px', cursor: 'pointer',
+                                fontWeight: 500, fontSize: '12px', whiteSpace: 'nowrap', marginBottom: '6px'
+                            }}
+                        >
+                            Changer l'avatar
+                        </button>
+                        <input
+                            type="file"
+                            ref={avatarInputRef}
+                            style={{ display: 'none' }}
+                            accept="image/*, .jpg, .jpeg, .png, .gif"
+                            onChange={handleAvatarChange}
+                        />
+                    </div>
 
-                    <h3 style={{ color: 'var(--text-header)', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>
-                        {userProfile?.name || 'Satoshi'}
-                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                        <div>
+                            {isEditingProfile ? (
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    style={{
+                                        background: 'var(--bg-tertiary)', color: 'var(--text-header)', border: '1px solid var(--border-color)',
+                                        padding: '4px 8px', borderRadius: '4px', fontSize: '20px', fontWeight: 700, width: '200px', marginBottom: '8px'
+                                    }}
+                                />
+                            ) : (
+                                <h3 style={{ color: 'var(--text-header)', fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>
+                                    {userProfile?.name || 'Satoshi'}
+                                </h3>
+                            )}
+                        </div>
+
+                        {isEditingProfile ? (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={() => {
+                                        setEditName(userProfile?.name || '');
+                                        setEditBio(userProfile?.bio || '');
+                                        setEditStatus(userProfile?.status || 'En ligne');
+                                        setIsEditingProfile(false);
+                                    }}
+                                    style={{
+                                        background: 'transparent', color: 'var(--text-normal)', border: 'none',
+                                        padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
+                                    }}
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={handleSaveProfile}
+                                    style={{
+                                        background: 'var(--success-color)', color: 'white', border: 'none',
+                                        padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
+                                    }}
+                                >
+                                    Enregistrer
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setEditName(userProfile?.name || '');
+                                    setEditBio(userProfile?.bio || '');
+                                    setEditStatus(userProfile?.status || 'En ligne');
+                                    setIsEditingProfile(true);
+                                }}
+                                style={{
+                                    background: 'var(--accent-color)', color: 'white', border: 'none',
+                                    padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
+                                }}
+                            >
+                                Modifier le profil
+                            </button>
+                        )}
+                    </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Bio & Status (only shown in edit mode or if they exist, but we will always show for this component to match structure) */}
+                        <div style={{
+                            display: 'flex', flexDirection: 'column', gap: '12px',
+                            padding: '12px', borderRadius: '8px', backgroundColor: 'var(--bg-primary)'
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                    Statut d'activité
+                                </div>
+                                {isEditingProfile ? (
+                                    <select
+                                        value={editStatus}
+                                        onChange={(e) => setEditStatus(e.target.value)}
+                                        style={{
+                                            background: 'var(--bg-tertiary)', color: 'var(--text-normal)', border: '1px solid var(--border-color)',
+                                            padding: '8px', borderRadius: '4px', width: '100%', outline: 'none',
+                                            appearance: 'none',
+                                            cursor: 'pointer',
+                                            backgroundImage: 'linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%)',
+                                            backgroundPosition: 'calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)',
+                                            backgroundSize: '5px 5px, 5px 5px',
+                                            backgroundRepeat: 'no-repeat'
+                                        }}
+                                    >
+                                        <option value="En ligne" style={{ backgroundColor: 'var(--bg-secondary)' }}>En ligne</option>
+                                        <option value="Occupé" style={{ backgroundColor: 'var(--bg-secondary)' }}>Occupé</option>
+                                        <option value="Inactif" style={{ backgroundColor: 'var(--bg-secondary)' }}>Inactif</option>
+                                        <option value="Hors ligne" style={{ backgroundColor: 'var(--bg-secondary)' }}>Hors ligne</option>
+                                    </select>
+                                ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-normal)', fontSize: '14px' }}>
+                                        <div style={{
+                                            width: '10px', height: '10px', borderRadius: '50%',
+                                            backgroundColor: (userProfile?.status === 'En ligne' || !userProfile?.status) ? 'var(--success-color)' :
+                                                userProfile?.status === 'Occupé' ? 'var(--danger-color)' :
+                                                    userProfile?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' : 'var(--text-muted)'
+                                        }}></div>
+                                        {userProfile?.status || 'En ligne'}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                    À propos de moi
+                                </div>
+                                {isEditingProfile ? (
+                                    <textarea
+                                        value={editBio}
+                                        onChange={(e) => setEditBio(e.target.value)}
+                                        rows={3}
+                                        style={{
+                                            background: 'var(--bg-tertiary)', color: 'var(--text-normal)', border: '1px solid var(--border-color)',
+                                            padding: '8px', borderRadius: '4px', width: '100%', resize: 'vertical', minHeight: '60px'
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ color: 'var(--text-normal)', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
+                                        {userProfile?.bio || '—'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Username */}
                         <div style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',

@@ -13,6 +13,7 @@ const ChannelSidebar = ({
     isFriendsViewActive,
     userProfile,
     onOpenSettings,
+    onOpenServerSettings,
     isSpeaking,
     setIsSpeaking,
     isMuted,
@@ -92,7 +93,7 @@ const ChannelSidebar = ({
 
     return (
         <div className="channel-sidebar glass-panel">
-            <div className="channel-header">
+            <div className="channel-header" onClick={onOpenServerSettings}>
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{serverName}</span>
                 <ChevronDown size={18} />
             </div>
@@ -209,7 +210,13 @@ const ChannelSidebar = ({
                 <div className="user-avatar" style={{ backgroundImage: `url(${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'})`, backgroundSize: 'cover' }}></div>
                 <div className="user-info">
                     <div className="user-name">{userProfile?.name || 'Satoshi'}</div>
-                    <div className="user-status">En ligne</div>
+                    <div className="user-status" style={{
+                        color: (userProfile?.status === 'En ligne' || !userProfile?.status) ? 'var(--success-color)' :
+                            userProfile?.status === 'Occupé' ? 'var(--danger-color)' :
+                                userProfile?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' : 'var(--text-muted)'
+                    }}>
+                        {userProfile?.status || 'En ligne'}
+                    </div>
                 </div>
                 <div className="control-buttons">
                     <button className="control-btn" onClick={activeVoiceChannelId ? toggleMute : () => showToast("Rejoignez un salon vocal d'abord", "info")} style={isMuted && activeVoiceChannelId ? { color: '#da373c' } : {}} title={isMuted ? 'Réactiver le micro' : 'Couper le micro'}>

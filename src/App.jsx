@@ -13,6 +13,7 @@ const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const ExploreModal = lazy(() => import('./components/ExploreModal'));
 const CommandCenter = lazy(() => import('./components/CommandCenter'));
 const CreateServerModal = lazy(() => import('./components/CreateServerModal'));
+const ServerSettingsModal = lazy(() => import('./components/ServerSettingsModal'));
 import MobileDrawer from './components/MobileDrawer';
 import MemberList from './components/MemberList';
 import VoiceCallView from './components/VoiceCallView';
@@ -23,6 +24,7 @@ function App() {
   const [activeChannelId, setActiveChannelId] = useState('c3');
   const [activeVoiceChannelId, setActiveVoiceChannelId] = useState(null);
   const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isExploreModalOpen, setIsExploreModalOpen] = useState(false);
   const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
@@ -40,11 +42,15 @@ function App() {
   const mediaStreamRef = React.useRef(null);
   const displayStreamRef = React.useRef(null);
 
+  // Global notification mute state
+  const [notificationsEnabled, setNotificationsEnabled] = useLocalStorage('freedom-notifications', true);
+
   const [userProfile, setUserProfile] = useLocalStorage('freedom-profile', {
     name: 'Satoshi (Moi)',
     avatar: 'https://i.pravatar.cc/150?img=11',
     banner: '#5865F2',
-    bio: 'Développeur passionné par le futur du web.'
+    bio: 'Développeur passionné par le futur du web.',
+    status: 'En ligne'
   });
 
   const [preferences, setPreferences] = useLocalStorage('freedom-preferences', {
@@ -57,7 +63,7 @@ function App() {
   });
 
   // ── Sound Feedback ──
-  const { playMessageSend, playMessageReceive, playCommandOpen } = useSoundFeedback(preferences.appSounds !== false);
+  const { playMessageSend, playNotificationSound, playCommandOpen } = useSoundFeedback(preferences.appSounds !== false);
 
   // Apply Theme and Preferences
   useEffect(() => {
@@ -145,6 +151,18 @@ function App() {
     setIsMuted(false);
     setIsDeafened(false);
     if (isScreenSharing) handleStopScreenShare();
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+  };
+
+  const startDirectCall = (friendId) => {
+    // 1. Basculer sur la vue Chat
+    setCurrentView('chat');
+    // 2. Assigner un ID vocal spécifique à cet appel direct
+    setActiveVoiceChannelId(`call-${friendId}`);
+    // (ChannelSidebar s'occupera d'activer le micro car activeVoiceChannelId n'est plus null)
   };
 
   const toggleMute = () => {
@@ -253,6 +271,7 @@ function App() {
             isFriendsViewActive={currentView === 'friends'}
             userProfile={userProfile}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenServerSettings={() => setIsServerSettingsOpen(true)}
             isSpeaking={isSpeaking}
             setIsSpeaking={setIsSpeaking}
             isMuted={isMuted}
@@ -268,9 +287,25 @@ function App() {
 
         {/* Colonne 3 : Zone de Chat central ou Amis */}
         {currentView === 'friends' ? (
-          <FriendsView />
+          <FriendsView onStartCall={startDirectCall} />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
+            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+              <ChatView
+                activeChannelId={activeChannelId}
+                activeServerId={activeServerId}
+                onBanUser={handleBanUser}
+                onToggleMemberList={() => setIsMemberListOpen(!isMemberListOpen)}
+                onToggleMobileMenu={() => setIsMobileMenuOpen(true)}
+                userProfile={userProfile}
+                appSoundsEnabled={preferences.appSounds !== false}
+                notificationsEnabled={notificationsEnabled}
+                setNotificationsEnabled={setNotificationsEnabled}
+                playMessageSend={playMessageSend}
+                playNotificationSound={playNotificationSound}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+            </div>
             {activeVoiceChannelId && (
               <VoiceCallView
                 activeVoiceChannelId={activeVoiceChannelId}
@@ -286,19 +321,6 @@ function App() {
                 onDisconnect={handleVoiceDisconnect}
               />
             )}
-            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-              <ChatView
-                activeChannelId={activeChannelId}
-                activeServerId={activeServerId}
-                onBanUser={handleBanUser}
-                onToggleMemberList={() => setIsMemberListOpen(!isMemberListOpen)}
-                onToggleMobileMenu={() => setIsMobileMenuOpen(true)}
-                userProfile={userProfile}
-                appSoundsEnabled={preferences.appSounds !== false}
-                playMessageSend={playMessageSend}
-                style={{ flex: 1, minWidth: 0 }}
-              />
-            </div>
           </div>
         )}
 
@@ -314,6 +336,21 @@ function App() {
               isOpen={isServerModalOpen}
               onClose={() => setIsServerModalOpen(false)}
               onCreate={handleCreateServer}
+            />
+          )}
+
+          {isServerSettingsOpen && (
+            <ServerSettingsModal
+              isOpen={isServerSettingsOpen}
+              onClose={() => setIsServerSettingsOpen(false)}
+              serverName={activeServer?.name || 'Serveur Inconnu'}
+              categories={serverChannels}
+              onUpdateCategories={(newCategories) => {
+                setChannelsByServer({
+                  ...channelsByServer,
+                  [activeServerId]: newCategories
+                });
+              }}
             />
           )}
 

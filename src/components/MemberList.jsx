@@ -82,7 +82,20 @@ const MemberList = ({ members = [], onBanUser, userProfile }) => {
                                         className="member-avatar"
                                         style={{ backgroundImage: `url(${avatar})`, backgroundSize: 'cover' }}
                                     >
-                                        <div className={`status-indicator ${member.status === 'offline' ? 'offline' : ''}`}></div>
+                                        <div
+                                            className={`status-indicator ${member.status === 'offline' || member.status === 'Hors ligne' ? 'offline' : ''}`}
+                                            style={{
+                                                backgroundColor: (member.name === 'Satoshi (Moi)' ?
+                                                    (userProfile?.status === 'Occupé' ? 'var(--danger-color)' :
+                                                        userProfile?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
+                                                            userProfile?.status === 'Hors ligne' ? 'transparent' : 'var(--success-color)')
+                                                    :
+                                                    (member.status === 'Occupé' ? 'var(--danger-color)' :
+                                                        member.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
+                                                            (member.status === 'offline' || member.status === 'Hors ligne') ? 'transparent' : '')),
+                                                ...((member.name === 'Satoshi (Moi)' && userProfile?.status === 'Hors ligne') || member.status === 'offline' || member.status === 'Hors ligne' ? { border: '3px solid var(--text-muted)' } : {})
+                                            }}
+                                        ></div>
                                     </div>
                                     <span
                                         className="member-name"

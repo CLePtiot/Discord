@@ -63,7 +63,7 @@ export default function useSoundFeedback(enabled = true) {
     }, [enabled, getCtx]);
 
     /** Soft descending blip — message received */
-    const playMessageReceive = useCallback(() => {
+    const playNotificationSound = useCallback(() => {
         playTone(880, 0.1, 'sine', 0.06);
     }, [playTone]);
 
@@ -72,5 +72,5 @@ export default function useSoundFeedback(enabled = true) {
         playTone(1200, 0.06, 'triangle', 0.1);
     }, [playTone]);
 
-    return { playMessageSend, playMessageReceive, playCommandOpen };
+    return { playMessageSend, playNotificationSound, playCommandOpen };
 }

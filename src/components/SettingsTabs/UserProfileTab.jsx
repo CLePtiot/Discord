@@ -9,11 +9,8 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
     const handleFileChange = (e, field) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setUserProfile({ ...userProfile, [field]: event.target.result });
-            };
-            reader.readAsDataURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            setUserProfile({ ...userProfile, [field]: objectUrl });
         }
     };
 

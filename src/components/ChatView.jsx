@@ -6,7 +6,19 @@ import { useToast } from './Toast';
 import useSupabaseMessages from '../hooks/useSupabaseMessages';
 import MessageSkeleton from './MessageSkeleton';
 
-const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberList, onToggleMobileMenu, userProfile, appSoundsEnabled, playMessageSend }) => {
+const ChatView = ({
+    activeChannelId,
+    activeServerId,
+    onBanUser,
+    onToggleMemberList,
+    onToggleMobileMenu,
+    userProfile,
+    appSoundsEnabled,
+    notificationsEnabled,
+    setNotificationsEnabled,
+    playMessageSend,
+    playNotificationSound
+}) => {
     // ── Supabase Realtime: each ChatView instance gets its own subscription ──
     const { messages, sendMessage, deleteMessage, loading } = useSupabaseMessages(activeChannelId, activeServerId);
     const [inputValue, setInputValue] = useState('');
@@ -14,7 +26,6 @@ const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberLi
     const [contextMenu, setContextMenu] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
 
     // ── Lightbox state ──
     const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -25,8 +36,9 @@ const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberLi
     const messageHistoryRef = useRef(null);
     const fileInputRef = useRef(null);
     const prevLoadingRef = useRef(true);
+    const prevMessageCount = useRef(0);
 
-    // ── Auto-scroll: smooth for new messages, instant after loading finishes ──
+    // ── Auto-scroll & Message Incoming Sound ──
     useEffect(() => {
         if (prevLoadingRef.current && !loading) {
             // Just finished loading → snap to bottom instantly
@@ -34,11 +46,20 @@ const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberLi
                 messageHistoryRef.current.scrollTop = messageHistoryRef.current.scrollHeight;
             }
         } else if (!loading) {
-            // New message arrived while already loaded → smooth scroll
+            // New message arrived while already loaded
+            if (messages.length > prevMessageCount.current) {
+                const lastMsg = messages[messages.length - 1];
+                // Play notification if the message is from someone else, we are not muted, and it's not an optimistic local insert.
+                // Depending on app logic, userProfile.name might not match exactly, so check auth id if possible, here using name.
+                if (lastMsg.author !== userProfile.name && notificationsEnabled && !lastMsg._optimistic) {
+                    if (playNotificationSound) playNotificationSound();
+                }
+            }
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
         prevLoadingRef.current = loading;
-    }, [messages, loading]);
+        prevMessageCount.current = messages.length;
+    }, [messages, loading, notificationsEnabled, userProfile.name, playNotificationSound]);
 
     // Close context menu on outside click
     useEffect(() => {
@@ -100,9 +121,9 @@ const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberLi
     };
 
     const handleMuteToggle = () => {
-        const newMutedState = !isMuted;
-        setIsMuted(newMutedState);
-        showToast(newMutedState ? 'Notifications désactivées pour ce salon' : 'Notifications activées pour ce salon', newMutedState ? 'info' : 'success');
+        const newEnabledState = !notificationsEnabled;
+        setNotificationsEnabled(newEnabledState);
+        showToast(newEnabledState ? 'Notifications activées pour ce salon' : 'Notifications désactivées pour ce salon', newEnabledState ? 'success' : 'info');
     };
 
     const handleSendCookie = () => {
@@ -185,7 +206,7 @@ const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberLi
                 <div style={{ flex: 1 }}></div>
 
                 <div style={{ display: 'flex', gap: '16px', color: 'var(--text-muted)' }}>
-                    {isMuted ? (
+                    {!notificationsEnabled ? (
                         <BellOff size={20} cursor="pointer" color="var(--danger-color)" onClick={handleMuteToggle} title="Réactiver les notifications" />
                     ) : (
                         <Bell size={20} cursor="pointer" onClick={handleMuteToggle} title="Mettre en sourdine" />
