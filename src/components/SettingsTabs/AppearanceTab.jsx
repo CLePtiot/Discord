@@ -70,6 +70,64 @@ const AppearanceTab = ({ preferences, setPreferences }) => {
 
             <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '24px 0' }}></div>
 
+            {/* Customization Options */}
+            <div style={{ marginBottom: '32px', display: 'flex', gap: '32px' }}>
+                {/* Accent Color */}
+                <div style={{ flex: 1 }}>
+                    <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>
+                        Couleur d'accentuation
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
+                        Choisis la couleur principale pour les boutons, icônes et effets de survol.
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <input
+                            type="color"
+                            value={preferences.accentColor || '#5865F2'}
+                            onChange={(e) => setPreferences({ ...preferences, accentColor: e.target.value })}
+                            style={{
+                                width: '40px', height: '40px', padding: '0', border: 'none',
+                                borderRadius: '8px', cursor: 'pointer', backgroundColor: 'transparent'
+                            }}
+                        />
+                        <div style={{ color: 'var(--text-normal)', fontFamily: 'monospace', fontSize: '14px', backgroundColor: 'var(--bg-input)', padding: '6px 12px', borderRadius: '4px' }}>
+                            {preferences.accentColor || '#5865F2'}
+                        </div>
+                        <button
+                            onClick={() => setPreferences({ ...preferences, accentColor: '#5865F2' })}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline' }}
+                        >
+                            Réinitialiser
+                        </button>
+                    </div>
+                </div>
+
+                {/* Blur Intensity */}
+                <div style={{ flex: 1 }}>
+                    <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>
+                        Intensité du verre (Blur)
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
+                        Ajuste le niveau de flou d'arrière-plan des panneaux de l'interface.
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <input
+                            type="range"
+                            min="0"
+                            max="60"
+                            value={preferences.blurIntensity ?? 40}
+                            onChange={(e) => setPreferences({ ...preferences, blurIntensity: Number(e.target.value) })}
+                            style={{ flex: 1, accentColor: 'var(--accent-color)' }}
+                        />
+                        <span style={{ color: 'var(--text-normal)', fontWeight: 600, fontSize: '14px', minWidth: '40px' }}>
+                            {preferences.blurIntensity ?? 40}px
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '24px 0' }}></div>
+
             <div>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>Affichage des messages</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { Trash2, ShieldAlert, Eye, EyeOff, Download, Upload } from 'lucide-react';
 import InlineModal from '../InlineModal';
+import { useToast } from '../Toast';
 
 const Toggle = ({ value, onChange }) => (
     <div className={`toggle-switch ${value ? 'on' : 'off'}`} onClick={() => onChange(!value)}>
@@ -9,13 +10,16 @@ const Toggle = ({ value, onChange }) => (
     </div>
 );
 
-const PrivacyTab = () => {
+const PrivacyTab = ({ onLogout, preferences, setPreferences }) => {
     const [dmFromMembers, setDmFromMembers] = useState(true);
     const [friendRequests, setFriendRequests] = useState(true);
     const [activityStatus, setActivityStatus] = useState(true);
     const [dataCollection, setDataCollection] = useState(false);
     const [showConfirmClear, setShowConfirmClear] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
+
+    const { showToast } = useToast();
+    const fileInputRef = useRef(null);
 
     const settings = [
         {
@@ -37,6 +41,12 @@ const PrivacyTab = () => {
             label: 'Collecte de données d\'utilisation',
             desc: 'Partage des données anonymes pour améliorer Project Freedom.',
             value: dataCollection, onChange: setDataCollection
+        },
+        {
+            label: 'Mode Furtif (Stealth Mode)',
+            desc: 'Rend flous les noms et avatars des autres utilisateurs jusqu\'au survol. Idéal pour streamer ou dans les lieux publics.',
+            value: preferences?.stealthMode || false,
+            onChange: (val) => setPreferences({ ...preferences, stealthMode: val })
         }
     ];
 
@@ -45,14 +55,69 @@ const PrivacyTab = () => {
             setShowConfirmClear(true);
             return;
         }
-        // Clear all localStorage items related to freedom
-        const keys = Object.keys(localStorage);
-        keys.forEach(key => {
-            if (key.startsWith('freedom-')) {
-                localStorage.removeItem(key);
+        if (onLogout) {
+            onLogout();
+        } else {
+            // Fallback clear all localStorage items related to freedom
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith('freedom-')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            setShowClearModal(true);
+        }
+    };
+
+    const handleExportData = () => {
+        try {
+            const profileData = localStorage.getItem('freedom-profile');
+            if (!profileData) {
+                showToast("Aucun profil à exporter", "error");
+                return;
             }
-        });
-        setShowClearModal(true);
+            // Encode in base64
+            const encodedData = btoa(encodeURIComponent(profileData));
+
+            // Create a blob and trigger download
+            const blob = new Blob([encodedData], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `freedom-key.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Clé de session exportée !", "success");
+        } catch (e) {
+            showToast("Erreur lors de l'exportation", "error");
+        }
+    };
+
+    const handleImportData = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const encodedData = event.target.result;
+                const decodedData = decodeURIComponent(atob(encodedData));
+
+                // Simple validation to check if it's JSON
+                JSON.parse(decodedData);
+
+                localStorage.setItem('freedom-profile', decodedData);
+                showToast("Clé importée, rechargement...", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } catch (error) {
+                console.error("Import error", error);
+                showToast("Fichier de clé invalide", "error");
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset input
+        e.target.value = null;
     };
 
     return (
@@ -93,6 +158,28 @@ const PrivacyTab = () => {
                     Chez Project Freedom, ta vie privée est notre priorité. Tes données sont stockées <strong style={{ color: 'var(--text-normal)' }}>localement sur ton appareil</strong> et ne sont jamais envoyées à des serveurs tiers.
                     Tu peux à tout moment effacer l'ensemble de tes données.
                 </p>
+
+                <div className="danger-zone" style={{ marginBottom: '16px', borderColor: 'rgba(255,255,255,0.1)', background: 'var(--bg-secondary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ color: 'var(--text-header)', fontWeight: 600, marginBottom: '4px' }}>
+                                Portabilité des données
+                            </div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
+                                Exporte ton profil (avatar, pseudo) sous forme de clé chiffrée (.txt) pour le restaurer plus tard ou sur un autre appareil.
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button className="voice-control-btn" style={{ background: 'var(--bg-app)' }} onClick={handleExportData}>
+                                    <Download size={16} /> Exporter ma clé de session
+                                </button>
+                                <button className="voice-control-btn" style={{ background: 'var(--bg-app)' }} onClick={() => fileInputRef.current?.click()}>
+                                    <Upload size={16} /> Importer une clé
+                                </button>
+                                <input type="file" accept=".txt" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImportData} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div className="danger-zone">
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>

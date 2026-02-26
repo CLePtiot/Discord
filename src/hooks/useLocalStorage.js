@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { obfuscateData, deobfuscateData } from '../utils/privacy';
 
-function useLocalStorage(key, initialValue) {
+function useLocalStorage(key, initialValue, obfuscate = false) {
     // State to store our value
     // Pass initial state function to useState so logic is only executed once
     const [storedValue, setStoredValue] = useState(() => {
@@ -10,8 +11,14 @@ function useLocalStorage(key, initialValue) {
         try {
             // Get from local storage by key
             const item = window.localStorage.getItem(key);
-            // Parse stored json or if none return initialValue
-            return item ? JSON.parse(item) : initialValue;
+            if (!item) return initialValue;
+
+            if (obfuscate) {
+                const deobfuscated = deobfuscateData(item);
+                return deobfuscated !== null ? deobfuscated : initialValue;
+            } else {
+                return JSON.parse(item);
+            }
         } catch (error) {
             // If error also return initialValue
             console.error(error);
@@ -30,7 +37,14 @@ function useLocalStorage(key, initialValue) {
             setStoredValue(valueToStore);
             // Save to local storage
             if (typeof window !== "undefined") {
-                window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                if (obfuscate) {
+                    const obfuscated = obfuscateData(valueToStore);
+                    if (obfuscated) {
+                        window.localStorage.setItem(key, obfuscated);
+                    }
+                } else {
+                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                }
 
                 // Dispatch a custom event so other components can listen if needed
                 window.dispatchEvent(new Event('local-storage'));

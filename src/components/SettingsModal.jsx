@@ -54,11 +54,11 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
             case 'user-profile':
                 return <UserProfileTab userProfile={userProfile} setUserProfile={setUserProfile} />;
             case 'privacy':
-                return <PrivacyTab />;
+                return <PrivacyTab onLogout={onLogout} preferences={preferences} setPreferences={setPreferences} />;
             case 'appearance':
                 return <AppearanceTab preferences={preferences} setPreferences={setPreferences} />;
             case 'accessibility':
-                return <AccessibilityTab />;
+                return <AccessibilityTab preferences={preferences} setPreferences={setPreferences} />;
             case 'voice-video':
                 return <VoiceVideoTab />;
             case 'notifications':

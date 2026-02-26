@@ -1,22 +1,44 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Gift, Image as ImageIcon, Crown, Trash, Ban } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Gift, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_CHANNEL_NAMES } from '../mockData';
+import { useToast } from './Toast';
+import useSupabaseMessages from '../hooks/useSupabaseMessages';
+import MessageSkeleton from './MessageSkeleton';
 
-const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, onRemoveMessage, onBanUser, onToggleMemberList }) => {
+const ChatView = ({ activeChannelId, activeServerId, onBanUser, onToggleMemberList, onToggleMobileMenu, userProfile, appSoundsEnabled, playMessageSend }) => {
+    // ── Supabase Realtime: each ChatView instance gets its own subscription ──
+    const { messages, sendMessage, deleteMessage, loading } = useSupabaseMessages(activeChannelId, activeServerId);
     const [inputValue, setInputValue] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
 
-    const messagesEndRef = useRef(null);
-    const fileInputRef = useRef(null);
+    // ── Lightbox state ──
+    const [lightboxSrc, setLightboxSrc] = useState(null);
 
-    // Auto-scroll to bottom when new messages arrive
+    const { showToast } = useToast();
+
+    const messagesEndRef = useRef(null);
+    const messageHistoryRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const prevLoadingRef = useRef(true);
+
+    // ── Auto-scroll: smooth for new messages, instant after loading finishes ──
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, selectedImage]);
+        if (prevLoadingRef.current && !loading) {
+            // Just finished loading → snap to bottom instantly
+            if (messageHistoryRef.current) {
+                messageHistoryRef.current.scrollTop = messageHistoryRef.current.scrollHeight;
+            }
+        } else if (!loading) {
+            // New message arrived while already loaded → smooth scroll
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+        prevLoadingRef.current = loading;
+    }, [messages, loading]);
 
     // Close context menu on outside click
     useEffect(() => {
@@ -25,26 +47,35 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
         return () => window.removeEventListener('click', handleClickOutside);
     }, []);
 
+    // ── Lightbox keyboard close ──
+    useEffect(() => {
+        if (!lightboxSrc) return;
+        const handleKey = (e) => {
+            if (e.key === 'Escape') setLightboxSrc(null);
+        };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [lightboxSrc]);
+
     const channelName = activeChannelId ? MOCK_CHANNEL_NAMES[activeChannelId] : 'sélectionnez-un-salon';
     const isDirectMessage = activeServerId === 'home';
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setSelectedImage(event.target.result);
-            };
-            reader.readAsDataURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            setSelectedImage(objectUrl);
         }
     };
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && (inputValue.trim() || selectedImage)) {
-            onSendMessage(inputValue, selectedImage);
+            sendMessage(inputValue, selectedImage, userProfile);
             setInputValue('');
             setSelectedImage(null);
             if (fileInputRef.current) fileInputRef.current.value = '';
+            // Play send sound
+            if (playMessageSend) playMessageSend();
         }
     };
 
@@ -63,13 +94,43 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
         setIsDragging(false);
         const file = e.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setSelectedImage(event.target.result);
-            };
-            reader.readAsDataURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            setSelectedImage(objectUrl);
         }
     };
+
+    const handleMuteToggle = () => {
+        const newMutedState = !isMuted;
+        setIsMuted(newMutedState);
+        showToast(newMutedState ? 'Notifications désactivées pour ce salon' : 'Notifications activées pour ce salon', newMutedState ? 'info' : 'success');
+    };
+
+    const handleSendCookie = () => {
+        sendMessage("Voici un cookie 🍪 !", null, userProfile);
+        showToast("Cookie envoyé !", "success");
+        if (playMessageSend) playMessageSend();
+    };
+
+    const handleAddEmoji = () => {
+        const emojis = ['😂', '😎', '🔥', '🎉', '💡', '🚀', '❤️', '🤔'];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        setInputValue(prev => prev + randomEmoji);
+    };
+
+    const handleDownloadImage = useCallback((src) => {
+        const a = document.createElement('a');
+        a.href = src;
+        a.download = `image_${Date.now()}.png`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }, []);
+
+    const filteredMessages = messages.filter(msg =>
+        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.author.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     if (isDirectMessage) {
         return (
@@ -107,6 +168,16 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
             )}
 
             <div className="chat-header">
+                {onToggleMobileMenu && (
+                    <Menu
+                        className="mobile-menu-btn"
+                        size={24}
+                        color="var(--text-header)"
+                        cursor="pointer"
+                        onClick={onToggleMobileMenu}
+                        style={{ marginRight: '12px' }}
+                    />
+                )}
                 <Hash size={24} color="var(--text-muted)" />
                 <span className="chat-title">{channelName}</span>
                 <span className="chat-topic">Discussion dans {channelName}</span>
@@ -115,34 +186,47 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
 
                 <div style={{ display: 'flex', gap: '16px', color: 'var(--text-muted)' }}>
                     {isMuted ? (
-                        <BellOff size={20} cursor="pointer" color="var(--danger-color)" onClick={() => setIsMuted(false)} title="Réactiver les notifications" />
+                        <BellOff size={20} cursor="pointer" color="var(--danger-color)" onClick={handleMuteToggle} title="Réactiver les notifications" />
                     ) : (
-                        <Bell size={20} cursor="pointer" onClick={() => setIsMuted(true)} title="Mettre en sourdine" />
+                        <Bell size={20} cursor="pointer" onClick={handleMuteToggle} title="Mettre en sourdine" />
                     )}
                     <Users size={20} cursor="pointer" onClick={onToggleMemberList} title="Afficher/Masquer la liste des membres" />
                     <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-app)', padding: '2px 8px', borderRadius: '4px' }}>
-                        <input type="text" placeholder="Rechercher" style={{ background: 'none', border: 'none', color: 'white', width: '120px', outline: 'none', fontSize: '14px' }} />
-                        <Search size={16} />
+                        <input
+                            type="text"
+                            placeholder="Rechercher"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ background: 'none', border: 'none', color: 'white', width: '120px', outline: 'none', fontSize: '14px' }}
+                        />
+                        {searchQuery ? (
+                            <X size={16} cursor="pointer" onClick={() => setSearchQuery('')} />
+                        ) : (
+                            <Search size={16} />
+                        )}
                     </div>
                 </div>
             </div>
 
-            <div className="message-history">
-                {activeChannelId ? (
+            <div className="message-history" ref={messageHistoryRef}>
+                {loading ? (
+                    <MessageSkeleton count={5} />
+                ) : activeChannelId ? (
                     <>
-                        {messages.map((msg) => (
+                        {filteredMessages.length > 0 ? filteredMessages.map((msg) => (
                             <motion.div
                                 className="message"
                                 key={msg.id}
                                 initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.2 }}
+                                style={{ opacity: msg._optimistic ? 0.6 : 1 }}
                                 onContextMenu={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
 
-                                    const menuWidth = 200; // estimated width
-                                    const menuHeight = 100; // estimated height
+                                    const menuWidth = 200;
+                                    const menuHeight = 100;
                                     let x = e.pageX;
                                     let y = e.pageY;
 
@@ -188,20 +272,28 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
                                             <img
                                                 src={msg.image}
                                                 alt="Attachement"
+                                                onClick={() => setLightboxSrc(msg.image)}
                                                 style={{
                                                     maxHeight: '300px',
                                                     maxWidth: '100%',
                                                     objectFit: 'contain',
                                                     borderRadius: '8px',
-                                                    marginTop: '4px'
+                                                    marginTop: '4px',
+                                                    cursor: 'pointer',
+                                                    transition: 'filter 0.2s',
                                                 }}
+                                                onMouseEnter={e => e.currentTarget.style.filter = 'brightness(0.85)'}
+                                                onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
                                             />
                                         )}
                                     </div>
                                 </div>
                             </motion.div>
-                        ))}
-                        {/* Invisible div to scroll to bottom */}
+                        )) : (
+                            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                {searchQuery ? `Aucun message trouvé pour "${searchQuery}".` : 'Aucun message dans ce salon. Soyez le premier à écrire !'}
+                            </div>
+                        )}
                         <div ref={messagesEndRef} />
                     </>
                 ) : (
@@ -228,7 +320,13 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
                             style={{ height: '80px', borderRadius: '4px', objectFit: 'contain' }}
                         />
                         <button
-                            onClick={() => setSelectedImage(null)}
+                            onClick={() => {
+                                if (selectedImage && selectedImage.startsWith('blob:')) {
+                                    URL.revokeObjectURL(selectedImage);
+                                }
+                                setSelectedImage(null);
+                                if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
                             style={{
                                 position: 'absolute', top: '8px', right: '8px',
                                 background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white',
@@ -263,9 +361,9 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyDown}
                     />
-                    <Gift size={24} color="var(--text-muted)" cursor="pointer" title="Envoyer un cadeau" onClick={() => setInputValue(prev => prev + '🎁 cadeau ')} />
+                    <Gift size={24} color="var(--text-muted)" cursor="pointer" title="Envoyer un cookie 🍪" onClick={handleSendCookie} />
                     <ImageIcon size={24} color="var(--text-muted)" cursor="pointer" title="Joindre une image" onClick={() => fileInputRef.current?.click()} />
-                    <Smile size={24} color="var(--text-muted)" cursor="pointer" title="Emoji" onClick={() => setInputValue(prev => prev + '😊 ')} />
+                    <Smile size={24} color="var(--text-muted)" cursor="pointer" title="Emoji aléatoire" onClick={handleAddEmoji} />
                 </div>
             </div>
 
@@ -288,7 +386,7 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
                 >
                     <div className="context-menu-item danger" onClick={(e) => {
                         e.stopPropagation();
-                        if (onRemoveMessage) onRemoveMessage(contextMenu.messageId);
+                        deleteMessage(contextMenu.messageId, userProfile);
                         setContextMenu(null);
                     }}>
                         <span>Supprimer le message</span>
@@ -304,6 +402,81 @@ const ChatView = ({ activeChannelId, activeServerId, messages, onSendMessage, on
                     </div>
                 </div>
             )}
+
+            {/* ── Image Lightbox ── */}
+            <AnimatePresence>
+                {lightboxSrc && (
+                    <motion.div
+                        key="lightbox"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => setLightboxSrc(null)}
+                        style={{
+                            position: 'fixed', inset: 0,
+                            background: 'rgba(0,0,0,0.85)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            zIndex: 9999,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'zoom-out',
+                        }}
+                    >
+                        {/* Close btn */}
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { e.stopPropagation(); setLightboxSrc(null); }}
+                            style={{
+                                position: 'absolute', top: '20px', right: '20px',
+                                background: 'rgba(255,255,255,0.1)', border: 'none',
+                                color: 'white', width: '44px', height: '44px',
+                                borderRadius: '50%', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                backdropFilter: 'blur(12px)',
+                            }}
+                        >
+                            <X size={22} />
+                        </motion.button>
+
+                        {/* Download btn */}
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { e.stopPropagation(); handleDownloadImage(lightboxSrc); }}
+                            style={{
+                                position: 'absolute', top: '20px', right: '76px',
+                                background: 'rgba(255,255,255,0.1)', border: 'none',
+                                color: 'white', width: '44px', height: '44px',
+                                borderRadius: '50%', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                backdropFilter: 'blur(12px)',
+                            }}
+                        >
+                            <Download size={20} />
+                        </motion.button>
+
+                        {/* Image */}
+                        <motion.img
+                            initial={{ scale: 0.85, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.85, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                            src={lightboxSrc}
+                            alt="Lightbox"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                maxWidth: '90vw', maxHeight: '85vh',
+                                objectFit: 'contain',
+                                borderRadius: '12px',
+                                boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+                                cursor: 'default',
+                            }}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

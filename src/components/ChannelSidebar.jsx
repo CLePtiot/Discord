@@ -1,16 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor } from 'lucide-react';
+import { useToast } from './Toast';
 
-const ChannelSidebar = ({ serverName, categories, activeChannelId, activeVoiceChannelId, onSelectChannel, onJoinVoiceChannel, onFriendsClick, isFriendsViewActive, userProfile, onOpenSettings }) => {
-    const [isSpeaking, setIsSpeaking] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
-    const [isDeafened, setIsDeafened] = useState(false);
-    const [isScreenSharing, setIsScreenSharing] = useState(false);
+const ChannelSidebar = ({
+    serverName,
+    categories,
+    activeChannelIds = [],
+    activeVoiceChannelId,
+    onSelectChannel,
+    onJoinVoiceChannel,
+    onFriendsClick,
+    isFriendsViewActive,
+    userProfile,
+    onOpenSettings,
+    isSpeaking,
+    setIsSpeaking,
+    isMuted,
+    isDeafened,
+    isScreenSharing,
+    mediaStreamRef,
+    handleVoiceDisconnect,
+    toggleMute,
+    toggleDeafen,
+    toggleScreenShare
+}) => {
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
-    const mediaStreamRef = useRef(null);
-    const displayStreamRef = useRef(null);
     const animationFrameRef = useRef(null);
+    const { showToast } = useToast();
 
     // Find the active voice channel name
     const getActiveVoiceChannelName = () => {
@@ -26,7 +43,6 @@ const ChannelSidebar = ({ serverName, categories, activeChannelId, activeVoiceCh
     useEffect(() => {
         if (!activeVoiceChannelId) {
             setIsSpeaking(false);
-            if (isScreenSharing) handleStopScreenShare();
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
             if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(track => track.stop());
             if (audioContextRef.current && audioContextRef.current.state !== 'closed') audioContextRef.current.close();
@@ -66,65 +82,13 @@ const ChannelSidebar = ({ serverName, categories, activeChannelId, activeVoiceCh
         startMic();
 
         return () => {
-            if (isScreenSharing) handleStopScreenShare();
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
             if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(track => track.stop());
             if (audioContextRef.current && audioContextRef.current.state !== 'closed') audioContextRef.current.close();
         };
-    }, [activeVoiceChannelId]);
+    }, [activeVoiceChannelId, setIsSpeaking, mediaStreamRef]);
 
-    const handleDisconnect = () => {
-        onJoinVoiceChannel(null);
-        setIsMuted(false);
-        setIsDeafened(false);
-    };
-
-    const toggleMute = () => {
-        setIsMuted(!isMuted);
-        // Mute the mic stream
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getAudioTracks().forEach(track => {
-                track.enabled = isMuted; // toggle: if currently muted, enable
-            });
-        }
-    };
-
-    const toggleDeafen = () => {
-        const newDeaf = !isDeafened;
-        setIsDeafened(newDeaf);
-        if (newDeaf) {
-            setIsMuted(true);
-        } else {
-            setIsMuted(false);
-        }
-    };
-
-    const handleStopScreenShare = () => {
-        if (displayStreamRef.current) {
-            displayStreamRef.current.getTracks().forEach(track => track.stop());
-            displayStreamRef.current = null;
-        }
-        setIsScreenSharing(false);
-    };
-
-    const toggleScreenShare = async () => {
-        if (isScreenSharing) {
-            handleStopScreenShare();
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                displayStreamRef.current = stream;
-                setIsScreenSharing(true);
-
-                // Si l'utilisateur arrête le partage via le navigateur
-                stream.getVideoTracks()[0].onended = () => {
-                    handleStopScreenShare();
-                };
-            } catch (err) {
-                console.error("Partage d'écran annulé ou échoué", err);
-            }
-        }
-    };
+    // The voice connection handlers are passed via props now
 
     return (
         <div className="channel-sidebar glass-panel">
@@ -158,7 +122,7 @@ const ChannelSidebar = ({ serverName, categories, activeChannelId, activeVoiceCh
 
                         {category.channels.map(channel => {
                             const isText = channel.type === 'text';
-                            const isActiveText = isText && channel.id === activeChannelId;
+                            const isActiveText = isText && activeChannelIds.includes(channel.id);
                             const isActiveVoice = !isText && channel.id === activeVoiceChannelId;
                             const Icon = isText ? Hash : Volume2;
 
@@ -209,7 +173,7 @@ const ChannelSidebar = ({ serverName, categories, activeChannelId, activeVoiceCh
                                 <div className="voice-channel-name">{getActiveVoiceChannelName()} / {serverName}</div>
                             </div>
                         </div>
-                        <button className="voice-disconnect-btn" onClick={handleDisconnect} title="Se déconnecter">
+                        <button className="voice-disconnect-btn" onClick={handleVoiceDisconnect} title="Se déconnecter">
                             <PhoneOff size={20} />
                         </button>
                     </div>
@@ -248,13 +212,13 @@ const ChannelSidebar = ({ serverName, categories, activeChannelId, activeVoiceCh
                     <div className="user-status">En ligne</div>
                 </div>
                 <div className="control-buttons">
-                    <button className="control-btn" onClick={activeVoiceChannelId ? toggleMute : undefined} style={isMuted && activeVoiceChannelId ? { color: '#da373c' } : {}}>
+                    <button className="control-btn" onClick={activeVoiceChannelId ? toggleMute : () => showToast("Rejoignez un salon vocal d'abord", "info")} style={isMuted && activeVoiceChannelId ? { color: '#da373c' } : {}} title={isMuted ? 'Réactiver le micro' : 'Couper le micro'}>
                         {isMuted && activeVoiceChannelId ? <MicOff size={18} /> : <Mic size={18} />}
                     </button>
-                    <button className="control-btn" onClick={activeVoiceChannelId ? toggleDeafen : undefined} style={isDeafened && activeVoiceChannelId ? { color: '#da373c' } : {}}>
+                    <button className="control-btn" onClick={activeVoiceChannelId ? toggleDeafen : () => showToast("Rejoignez un salon vocal d'abord", "info")} style={isDeafened && activeVoiceChannelId ? { color: '#da373c' } : {}} title={isDeafened ? 'Réactiver le son' : 'Couper le son'}>
                         {isDeafened && activeVoiceChannelId ? <HeadphoneOff size={18} /> : <Headphones size={18} />}
                     </button>
-                    <button className="control-btn" onClick={onOpenSettings}><Settings size={18} /></button>
+                    <button className="control-btn" onClick={onOpenSettings} title="Paramètres Utilisateur"><Settings size={18} /></button>
                 </div>
             </div>
         </div>

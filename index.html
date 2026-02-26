@@ -1,13 +1,44 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>project-freedom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- SEO & Partage (Open Graph & Twitter Cards) -->
+    <title>Project Freedom | Chat souverain & privé</title>
+    <meta name="description" content="L'alternative décentralisée, ultra-rapide et personnalisable à Discord." />
+    
+    <meta property="og:title" content="Project Freedom | Chat souverain & privé" />
+    <meta property="og:description" content="L'alternative décentralisée, ultra-rapide et personnalisable à Discord." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://project-freedom.com" />
+    <meta property="og:image" content="/vite.svg" />
+    <meta property="og:theme-color" content="#000000" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Project Freedom | Chat souverain & privé" />
+    <meta name="twitter:description" content="L'alternative décentralisée, ultra-rapide et personnalisable à Discord." />
+    <meta name="twitter:image" content="/vite.svg" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/vite.svg" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('Service Worker enregistré', reg);
+          }).catch(err => {
+            console.error('Erreur SW', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

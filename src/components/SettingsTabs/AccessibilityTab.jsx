@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Volume2 } from 'lucide-react';
 
 const Toggle = ({ value, onChange }) => (
     <div className={`toggle-switch ${value ? 'on' : 'off'}`} onClick={() => onChange(!value)}>
@@ -7,7 +8,7 @@ const Toggle = ({ value, onChange }) => (
     </div>
 );
 
-const AccessibilityTab = () => {
+const AccessibilityTab = ({ preferences, setPreferences }) => {
     const [reducedMotion, setReducedMotion] = useState(false);
     const [highContrast, setHighContrast] = useState(false);
     const [largeText, setLargeText] = useState(false);
@@ -37,6 +38,11 @@ const AccessibilityTab = () => {
         }
     ];
 
+    const appSoundsEnabled = preferences?.appSounds !== false;
+    const handleToggleAppSounds = (val) => {
+        setPreferences({ ...preferences, appSounds: val });
+    };
+
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>Accessibilité</h2>
@@ -58,6 +64,28 @@ const AccessibilityTab = () => {
                             <Toggle value={s.value} onChange={s.onChange} />
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* ── App Sounds Toggle ── */}
+            <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
+                    Audio
+                </h3>
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 0',
+                }}>
+                    <div style={{ flex: 1, paddingRight: '16px' }}>
+                        <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Volume2 size={16} color="var(--accent-color)" />
+                            Sons de l'app
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                            Joue un son court lors de l'envoi de messages et de l'ouverture de la palette de commandes (Ctrl+K).
+                        </div>
+                    </div>
+                    <Toggle value={appSoundsEnabled} onChange={handleToggleAppSounds} />
                 </div>
             </div>
 
@@ -96,6 +124,33 @@ const AccessibilityTab = () => {
                             transition: 'filter 0.2s ease'
                         }}></div>
                     ))}
+                </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.06)', margin: '24px 0' }}></div>
+
+            {/* Font Size slider */}
+            <div>
+                <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, margin: '24px 0 16px 0', textTransform: 'uppercase' }}>
+                    Taille de la police du chat
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>
+                    Ajuste la taille du texte dans la zone de discussion principale pour un meilleur confort de lecture.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>A</span>
+                    <input
+                        type="range" min="12" max="24" step="1"
+                        value={preferences?.fontSize ?? 16}
+                        onChange={(e) => setPreferences({ ...preferences, fontSize: Number(e.target.value) })}
+                        style={{ flex: 1, accentColor: 'var(--accent-color)' }}
+                    />
+                    <span style={{ fontSize: '24px', color: 'var(--text-muted)' }}>A</span>
+                </div>
+                <div style={{ textAlign: 'right', marginTop: '8px' }}>
+                    <span style={{ color: 'var(--text-normal)', fontWeight: 600, fontSize: '14px' }}>
+                        {preferences?.fontSize ?? 16}px
+                    </span>
                 </div>
             </div>
         </motion.div>
