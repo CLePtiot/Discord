@@ -1302,3 +1302,73 @@ html,
   background-size: 200px 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
+
+/* ======================================================= */
+/* --- Server Settings Modal ---                           */
+/* ======================================================= */
+.glass-panel-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(40px) saturate(150%);
+  z-index: 10000;
+  display: flex;
+}
+.settings-layout {
+  display: flex; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;
+}
+.settings-sidebar-wrapper {
+  width: 280px; background: rgba(30, 31, 34, 0.3);
+  display: flex; justify-content: flex-end; padding: 60px 20px 60px 0;
+}
+.settings-sidebar {
+  width: 218px; display: flex; flex-direction: column; gap: 2px;
+}
+.settings-sidebar-header {
+  color: var(--text-muted); font-size: 11px; font-weight: 800;
+  text-transform: uppercase; padding: 6px 10px; margin-bottom: 8px;
+}
+.settings-tab {
+  padding: 8px 10px; border-radius: 4px; color: var(--text-normal);
+  font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.settings-tab:hover { background: var(--bg-hover); color: var(--text-header); }
+.settings-tab.active { background: var(--bg-active); color: var(--text-header); }
+.settings-section-title {
+  color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase;
+  padding: 16px 10px 6px 10px; margin: 0;
+}
+.settings-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 10px; }
+.settings-logout {
+  padding: 8px 10px; border-radius: 4px; color: var(--text-normal);
+  background: none; border: none; text-align: left; font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: space-between;
+}
+.settings-logout:hover { background: rgba(255,255,255,0.05); }
+.settings-content-wrapper {
+  flex: 1; padding: 60px 40px; overflow-y: auto; background: transparent; position: relative;
+}
+.settings-content-inner { max-width: 740px; position: relative; }
+.settings-close-btn-abs {
+  position: absolute; top: 60px; right: 40px; width: 36px; height: 36px;
+  border-radius: 50%; border: 2px solid var(--text-muted); display: flex;
+  align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted);
+  background: none; transition: all 0.2s; z-index: 50;
+}
+.settings-close-btn-abs:hover { border-color: var(--text-normal); color: var(--text-normal); background: rgba(255,255,255,0.1); }
+.settings-title { font-size: 20px; font-weight: 700; color: var(--text-header); margin-bottom: 24px; }
+.settings-field { margin-bottom: 24px; }
+.settings-field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+.settings-input { width: 100%; background: var(--bg-input); border: none; border-radius: 4px; padding: 10px; color: var(--text-normal); font-size: 15px; outline: none; }
+.settings-input:focus { box-shadow: 0 0 0 2px var(--accent-color); }
+
+/* Boutons spécifiques */
+.action-button { padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: 0.2s; color: white; }
+.action-button.primary { background: var(--accent-color); }
+.action-button.primary:hover { background: var(--accent-hover); }
+.action-button.success { background: #23a559; }
+.action-button.success:hover { background: #1f9450; }
+
+/* Rôles Cards */
+.role-card { background: rgba(43,45,49,0.5); border-radius: 8px; padding: 16px; border: 1px solid rgba(255,255,255,0.06); }
+.role-section-title { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.role-separator { height: 1px; background: rgba(255,255,255,0.06); margin: 16px 0; }

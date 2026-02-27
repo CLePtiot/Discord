@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor, PlusCircle } from 'lucide-react';
+import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor, PlusCircle, Trash2, Lock } from 'lucide-react';
 import { useToast } from './Toast';
 import { useAppContext } from '../contexts/AppContext';
 import { useVoiceContext } from '../contexts/VoiceContext';
 import CreateChannelModal from './CreateChannelModal';
+import DeleteChannelModal from './DeleteChannelModal';
 
 const ChannelSidebar = () => {
     const {
@@ -28,6 +29,7 @@ const ChannelSidebar = () => {
     const categories = serverChannels || [];
     const isFriendsViewActive = currentView === 'friends';
     const [createChannelModal, setCreateChannelModal] = useState({ isOpen: false, categoryName: '' });
+    const [deleteChannelModal, setDeleteChannelModal] = useState({ isOpen: false, categoryName: '', channelId: '', channelName: '' });
 
     // Find the active voice channel name
     const getActiveVoiceChannelName = () => {
@@ -88,7 +90,7 @@ const ChannelSidebar = () => {
         };
     }, [activeVoiceChannelId, setIsSpeaking, mediaStreamRef]);
 
-    const handleCreateChannel = (channelName, channelType) => {
+    const handleCreateChannel = (channelName, channelType, isPrivate) => {
         const { categoryName } = createChannelModal;
 
         // Find the category and add the new channel
@@ -98,7 +100,7 @@ const ChannelSidebar = () => {
                     ...cat,
                     channels: [
                         ...cat.channels,
-                        { id: `c_${Date.now()}`, name: channelName, type: channelType }
+                        { id: `c_${Date.now()}`, name: channelName, type: channelType, isPrivate }
                     ]
                 };
             }
@@ -113,6 +115,28 @@ const ChannelSidebar = () => {
 
         setCreateChannelModal({ isOpen: false, categoryName: '' });
         showToast(`Salon ${channelName} créé`, 'success');
+    };
+
+    const handleDeleteChannel = (categoryName, channelId) => {
+        const updatedCategories = categories.map(cat => {
+            if (cat.category === categoryName) {
+                return {
+                    ...cat,
+                    channels: cat.channels.filter(ch => ch.id !== channelId)
+                };
+            }
+            return cat;
+        });
+        setChannelsByServer({
+            ...channelsByServer,
+            [activeServerId]: updatedCategories
+        });
+
+        setDeleteChannelModal({ isOpen: false, categoryName: '', channelId: '', channelName: '' });
+        showToast('Salon supprimé', 'success');
+
+        if (activeChannelId === channelId) setActiveChannelId(null);
+        if (activeVoiceChannelId === channelId) handleVoiceDisconnect();
     };
 
     return (
@@ -175,9 +199,32 @@ const ChannelSidebar = () => {
                                             setIsMobileMenuOpen(false);
                                             isText ? setActiveChannelId(channel.id) : setActiveVoiceChannelId(channel.id);
                                         }}
+                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                     >
-                                        <Icon size={18} />
-                                        <span>{channel.name}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                                            <Icon size={18} style={{ flexShrink: 0 }} />
+                                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</span>
+                                            {channel.isPrivate && <Lock size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />}
+                                        </div>
+
+                                        <div
+                                            className="channel-delete-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteChannelModal({
+                                                    isOpen: true,
+                                                    categoryName: category.category,
+                                                    channelId: channel.id,
+                                                    channelName: channel.name
+                                                });
+                                            }}
+                                            style={{ color: 'var(--text-muted)', cursor: 'pointer', opacity: 0.8 }}
+                                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger-color)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                            title="Supprimer le salon"
+                                        >
+                                            <Trash2 size={14} />
+                                        </div>
                                     </div>
 
                                     {isActiveVoice && (
@@ -276,6 +323,13 @@ const ChannelSidebar = () => {
                 onClose={() => setCreateChannelModal({ isOpen: false, categoryName: '' })}
                 onCreate={handleCreateChannel}
                 categoryName={createChannelModal.categoryName}
+            />
+
+            <DeleteChannelModal
+                isOpen={deleteChannelModal.isOpen}
+                onClose={() => setDeleteChannelModal({ isOpen: false, categoryName: '', channelId: '', channelName: '' })}
+                onDelete={() => handleDeleteChannel(deleteChannelModal.categoryName, deleteChannelModal.channelId)}
+                channelName={deleteChannelModal.channelName}
             />
         </div>
     );
