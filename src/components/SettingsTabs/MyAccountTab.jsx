@@ -25,8 +25,33 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
     const handleBannerChange = (e) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            const objectUrl = URL.createObjectURL(file);
-            setUserProfile({ ...userProfile, banner: objectUrl });
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Upscale to a minimum banner resolution using canvas bicubic interpolation
+                    const minWidth = 960;
+                    const minHeight = 540;
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Use the larger of: original size or minimum size
+                    canvas.width = Math.max(img.width, minWidth);
+                    canvas.height = Math.max(img.height, minHeight);
+
+                    // Enable high-quality image smoothing
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+
+                    // Draw the image scaled to fill the canvas
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    const dataUrl = canvas.toDataURL('image/png');
+                    setUserProfile({ ...userProfile, banner: dataUrl });
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
         }
     };
 

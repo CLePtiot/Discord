@@ -6,6 +6,7 @@ import FriendsView from './components/FriendsView';
 import { ToastProvider } from './components/Toast';
 import useSoundFeedback from './hooks/useSoundFeedback';
 import { useAppContext } from './contexts/AppContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Lazy loaded heavy components
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
@@ -88,147 +89,149 @@ function App() {
   };
 
   return (
-    <ToastProvider>
-      <div className={`main-layout ${preferences.stealthMode ? 'stealth-active' : ''}`}>
-        <MobileDrawer isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
-          {/* Colonne 1 : Serveurs */}
-          <ServerSidebar />
+    <LanguageProvider language={preferences.language || 'fr'}>
+      <ToastProvider>
+        <div className={`main-layout ${preferences.stealthMode ? 'stealth-active' : ''}`}>
+          <MobileDrawer isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+            {/* Colonne 1 : Serveurs */}
+            <ServerSidebar />
 
-          {/* Colonne 2 : Salons et Profil Utilisateur */}
-          <ChannelSidebar />
-        </MobileDrawer>
+            {/* Colonne 2 : Salons et Profil Utilisateur */}
+            <ChannelSidebar />
+          </MobileDrawer>
 
-        {/* Colonne 3 : Zone de Chat central ou Amis */}
-        {currentView === 'friends' ? (
-          <FriendsView />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
-            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-              <ChatView
-                playMessageSend={playMessageSend}
-                playNotificationSound={playNotificationSound}
-                style={{ flex: 1, minWidth: 0 }}
-              />
+          {/* Colonne 3 : Zone de Chat central ou Amis */}
+          {currentView === 'friends' ? (
+            <FriendsView />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
+              <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+                <ChatView
+                  playMessageSend={playMessageSend}
+                  playNotificationSound={playNotificationSound}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+              </div>
+              <VoiceCallView />
             </div>
-            <VoiceCallView />
-          </div>
-        )}
-
-        {/* Colonne 4 : Liste des Membres */}
-        {isMemberListOpen && (
-          <MemberList
-            members={members}
-            roles={rolesByServer[activeServerId] || [
-              { id: 'r1', name: 'Administrateur', color: '#da373c', badge: 'crown' },
-              { id: 'r2', name: 'Membre', color: '#949ba4', badge: null }
-            ]}
-            memberRoles={memberRolesByServer[activeServerId] || {}}
-            onBanUser={handleBanUser}
-            userProfile={userProfile}
-          />
-        )}
-
-        {/* Modals with Lazy Loading */}
-        <Suspense fallback={null}>
-          {isServerModalOpen && (
-            <CreateServerModal
-              isOpen={isServerModalOpen}
-              onClose={() => setIsServerModalOpen(false)}
-              onCreate={handleCreateServer}
-            />
           )}
 
-          {isServerSettingsOpen && (
-            <ServerSettingsModal
-              isOpen={isServerSettingsOpen}
-              onClose={() => setIsServerSettingsOpen(false)}
-              serverName={activeServer?.name || 'Serveur Inconnu'}
-              categories={serverChannels}
-              onUpdateCategories={(newCategories) => {
-                setChannelsByServer({
-                  ...channelsByServer,
-                  [activeServerId]: newCategories
-                });
-              }}
-              initialRoles={rolesByServer[activeServerId] || [
-                {
-                  id: 'r1',
-                  name: 'Administrateur',
-                  color: '#da373c',
-                  badge: 'crown',
-                  permissions: {
-                    sendMessages: true, attachFiles: true, embedLinks: true, addReactions: true, useEmojis: true,
-                    mentionEveryone: true, manageMessages: true, readMessageHistory: true, sendTTSMessages: true, pinMessages: true,
-                    connectVoice: true, speakVoice: true, videoVoice: true, muteMembers: true, deafenMembers: true,
-                    moveMembers: true, useVAD: true, prioritySpeaker: true,
-                    kickMembers: true, banMembers: true, timeoutMembers: true, createInvites: true, changeNickname: true, manageNicknames: true,
-                    viewChannels: true, manageChannels: true, manageWebhooks: true,
-                    manageServer: true, manageRoles: true, manageEmojis: true, viewAuditLog: true, administrator: true
-                  }
-                },
-                {
-                  id: 'r2',
-                  name: 'Membre',
-                  color: '#949ba4',
-                  badge: null,
-                  permissions: {
-                    sendMessages: true, attachFiles: true, embedLinks: true, addReactions: true, useEmojis: true,
-                    mentionEveryone: false, manageMessages: false, readMessageHistory: true, sendTTSMessages: false, pinMessages: false,
-                    connectVoice: true, speakVoice: true, videoVoice: false, muteMembers: false, deafenMembers: false,
-                    moveMembers: false, useVAD: true, prioritySpeaker: false,
-                    kickMembers: false, banMembers: false, timeoutMembers: false, createInvites: true, changeNickname: true, manageNicknames: false,
-                    viewChannels: true, manageChannels: false, manageWebhooks: false,
-                    manageServer: false, manageRoles: false, manageEmojis: false, viewAuditLog: false, administrator: false
-                  }
-                }
+          {/* Colonne 4 : Liste des Membres */}
+          {isMemberListOpen && (
+            <MemberList
+              members={members}
+              roles={rolesByServer[activeServerId] || [
+                { id: 'r1', name: 'Administrateur', color: '#da373c', badge: 'crown' },
+                { id: 'r2', name: 'Membre', color: '#949ba4', badge: null }
               ]}
-              onUpdateRoles={(newRoles) => {
-                setRolesByServer({
-                  ...rolesByServer,
-                  [activeServerId]: newRoles
-                });
-              }}
-              members={members}
               memberRoles={memberRolesByServer[activeServerId] || {}}
-              onUpdateMemberRoles={(newMemberRoles) => {
-                setMemberRolesByServer({
-                  ...memberRolesByServer,
-                  [activeServerId]: newMemberRoles
-                });
-              }}
-            />
-          )}
-
-          {isSettingsOpen && (
-            <SettingsModal
-              isOpen={isSettingsOpen}
-              onClose={() => setIsSettingsOpen(false)}
+              onBanUser={handleBanUser}
               userProfile={userProfile}
-              setUserProfile={setUserProfile}
-              preferences={preferences}
-              setPreferences={setPreferences}
-              onLogout={handleLogout}
             />
           )}
 
-          {isExploreModalOpen && (
-            <ExploreModal
-              isOpen={isExploreModalOpen}
-              onClose={() => setIsExploreModalOpen(false)}
-            />
-          )}
+          {/* Modals with Lazy Loading */}
+          <Suspense fallback={null}>
+            {isServerModalOpen && (
+              <CreateServerModal
+                isOpen={isServerModalOpen}
+                onClose={() => setIsServerModalOpen(false)}
+                onCreate={handleCreateServer}
+              />
+            )}
 
-          {isCommandCenterOpen && (
-            <CommandCenter
-              isOpen={isCommandCenterOpen}
-              onClose={() => setIsCommandCenterOpen(false)}
-              onAction={handleCommandAction}
-              members={members}
-            />
-          )}
-        </Suspense>
-      </div>
-    </ToastProvider>
+            {isServerSettingsOpen && (
+              <ServerSettingsModal
+                isOpen={isServerSettingsOpen}
+                onClose={() => setIsServerSettingsOpen(false)}
+                serverName={activeServer?.name || 'Serveur Inconnu'}
+                categories={serverChannels}
+                onUpdateCategories={(newCategories) => {
+                  setChannelsByServer({
+                    ...channelsByServer,
+                    [activeServerId]: newCategories
+                  });
+                }}
+                initialRoles={rolesByServer[activeServerId] || [
+                  {
+                    id: 'r1',
+                    name: 'Administrateur',
+                    color: '#da373c',
+                    badge: 'crown',
+                    permissions: {
+                      sendMessages: true, attachFiles: true, embedLinks: true, addReactions: true, useEmojis: true,
+                      mentionEveryone: true, manageMessages: true, readMessageHistory: true, sendTTSMessages: true, pinMessages: true,
+                      connectVoice: true, speakVoice: true, videoVoice: true, muteMembers: true, deafenMembers: true,
+                      moveMembers: true, useVAD: true, prioritySpeaker: true,
+                      kickMembers: true, banMembers: true, timeoutMembers: true, createInvites: true, changeNickname: true, manageNicknames: true,
+                      viewChannels: true, manageChannels: true, manageWebhooks: true,
+                      manageServer: true, manageRoles: true, manageEmojis: true, viewAuditLog: true, administrator: true
+                    }
+                  },
+                  {
+                    id: 'r2',
+                    name: 'Membre',
+                    color: '#949ba4',
+                    badge: null,
+                    permissions: {
+                      sendMessages: true, attachFiles: true, embedLinks: true, addReactions: true, useEmojis: true,
+                      mentionEveryone: false, manageMessages: false, readMessageHistory: true, sendTTSMessages: false, pinMessages: false,
+                      connectVoice: true, speakVoice: true, videoVoice: false, muteMembers: false, deafenMembers: false,
+                      moveMembers: false, useVAD: true, prioritySpeaker: false,
+                      kickMembers: false, banMembers: false, timeoutMembers: false, createInvites: true, changeNickname: true, manageNicknames: false,
+                      viewChannels: true, manageChannels: false, manageWebhooks: false,
+                      manageServer: false, manageRoles: false, manageEmojis: false, viewAuditLog: false, administrator: false
+                    }
+                  }
+                ]}
+                onUpdateRoles={(newRoles) => {
+                  setRolesByServer({
+                    ...rolesByServer,
+                    [activeServerId]: newRoles
+                  });
+                }}
+                members={members}
+                memberRoles={memberRolesByServer[activeServerId] || {}}
+                onUpdateMemberRoles={(newMemberRoles) => {
+                  setMemberRolesByServer({
+                    ...memberRolesByServer,
+                    [activeServerId]: newMemberRoles
+                  });
+                }}
+              />
+            )}
+
+            {isSettingsOpen && (
+              <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                userProfile={userProfile}
+                setUserProfile={setUserProfile}
+                preferences={preferences}
+                setPreferences={setPreferences}
+                onLogout={handleLogout}
+              />
+            )}
+
+            {isExploreModalOpen && (
+              <ExploreModal
+                isOpen={isExploreModalOpen}
+                onClose={() => setIsExploreModalOpen(false)}
+              />
+            )}
+
+            {isCommandCenterOpen && (
+              <CommandCenter
+                isOpen={isCommandCenterOpen}
+                onClose={() => setIsCommandCenterOpen(false)}
+                onAction={handleCommandAction}
+                members={members}
+              />
+            )}
+          </Suspense>
+        </div>
+      </ToastProvider>
+    </LanguageProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Palette, Mic, Bell, Shield, Accessibility, Keyboard, LogOut } from 'lucide-react';
+import { useTranslation } from '../contexts/LanguageContext';
 import UserProfileTab from './SettingsTabs/UserProfileTab';
 import VoiceVideoTab from './SettingsTabs/VoiceVideoTab';
 import AppearanceTab from './SettingsTabs/AppearanceTab';
@@ -15,27 +16,28 @@ import AdvancedTab from './SettingsTabs/AdvancedTab';
 
 const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferences, setPreferences, onLogout }) => {
     const [activeTab, setActiveTab] = useState('my-account');
+    const { t } = useTranslation();
 
     const tabSections = [
         {
-            title: 'PARAMÈTRES UTILISATEUR',
+            title: t('settings.user_settings'),
             tabs: [
-                { id: 'my-account', label: 'Mon compte' },
-                { id: 'user-profile', label: 'Profil d\'utilisateur', badge: 'NITRO' },
-                { id: 'privacy', label: 'Confidentialité & Sécurité' },
+                { id: 'my-account', label: t('settings.my_account') },
+                { id: 'user-profile', label: t('settings.user_profile') },
+                { id: 'privacy', label: t('settings.privacy') },
             ]
         },
         {
-            title: 'PARAMÈTRES DE L\'APP',
+            title: t('settings.app_settings'),
             tabs: [
-                { id: 'appearance', label: 'Apparence' },
-                { id: 'accessibility', label: 'Accessibilité' },
-                { id: 'voice-video', label: 'Voix & Vidéo' },
-                { id: 'text-images', label: 'Texte & Images' },
-                { id: 'notifications', label: 'Notifications' },
-                { id: 'keybinds', label: 'Raccourcis clavier' },
-                { id: 'language', label: 'Langue' },
-                { id: 'advanced', label: 'Avancé' },
+                { id: 'appearance', label: t('settings.appearance') },
+                { id: 'accessibility', label: t('settings.accessibility') },
+                { id: 'voice-video', label: t('settings.voice_video') },
+                { id: 'text-images', label: t('settings.text_images') },
+                { id: 'notifications', label: t('settings.notifications') },
+                { id: 'keybinds', label: t('settings.keybinds') },
+                { id: 'language', label: t('settings.language') },
+                { id: 'advanced', label: t('settings.advanced') },
             ]
         }
     ];
@@ -132,17 +134,6 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                                             }}
                                         >
                                             <span>{tab.label}</span>
-                                            {tab.badge && (
-                                                <div style={{
-                                                    background: 'linear-gradient(90deg, #ff73fa, #5865f2)',
-                                                    WebkitBackgroundClip: 'text',
-                                                    WebkitTextFillColor: 'transparent',
-                                                    fontSize: '10px',
-                                                    fontWeight: 800
-                                                }}>
-                                                    {tab.badge}
-                                                </div>
-                                            )}
                                         </div>
                                     ))}
                                 </React.Fragment>
@@ -153,7 +144,7 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                             {/* Logout button */}
                             <button className="settings-logout-btn" onClick={onLogout}>
                                 <LogOut size={16} />
-                                <span>Déconnexion</span>
+                                <span>{t('settings.logout')}</span>
                             </button>
 
                             <div className="settings-separator"></div>
@@ -200,7 +191,7 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                             <button className="settings-close-btn" onClick={onClose}>
                                 <X size={18} />
                             </button>
-                            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>ÉCHAP</span>
+                            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{t('settings.escape')}</span>
                         </div>
                     </div>
                 </motion.div>

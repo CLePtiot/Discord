@@ -9,8 +9,31 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
     const handleFileChange = (e, field) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            const objectUrl = URL.createObjectURL(file);
-            setUserProfile({ ...userProfile, [field]: objectUrl });
+            if (field === 'banner') {
+                // Canvas-based upscaling for banner to prevent pixelation
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const minWidth = 960;
+                        const minHeight = 540;
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = Math.max(img.width, minWidth);
+                        canvas.height = Math.max(img.height, minHeight);
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const dataUrl = canvas.toDataURL('image/png');
+                        setUserProfile({ ...userProfile, [field]: dataUrl });
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const objectUrl = URL.createObjectURL(file);
+                setUserProfile({ ...userProfile, [field]: objectUrl });
+            }
         }
     };
 
@@ -164,13 +187,7 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                             }}></div>
                         </div>
 
-                        {/* Badges/Nitro demo */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px' }}>
-                            <div style={{ background: 'var(--bg-secondary)', padding: '4px', borderRadius: '6px', display: 'flex', gap: '4px' }}>
-                                {/* Fake badge */}
-                                <div style={{ width: '22px', height: '22px', borderRadius: '4px', background: 'linear-gradient(45deg, #ff73fa, #5865f2)' }} />
-                            </div>
-                        </div>
+
 
                         {/* Content */}
                         <div style={{ padding: '36px 16px 16px 16px' }}>
