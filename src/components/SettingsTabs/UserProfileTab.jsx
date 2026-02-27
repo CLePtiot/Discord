@@ -66,9 +66,10 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                         <div style={{
                             height: '140px', width: '100%', borderRadius: '8px',
                             backgroundColor: userProfile.banner.startsWith('#') ? userProfile.banner : 'transparent',
+                            backgroundImage: userProfile.banner.startsWith('#') ? 'none' : `url("${userProfile.banner}")`,
+                            backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
                             marginBottom: '12px', position: 'relative', cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)', transition: 'filter 0.2s',
-                            display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                             overflow: 'hidden'
                         }}
                             onClick={() => bannerInputRef.current?.click()}
@@ -81,20 +82,6 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                                 if (overlay) overlay.style.opacity = '0';
                             }}
                         >
-                            {!userProfile.banner.startsWith('#') && (
-                                <img
-                                    src={userProfile.banner}
-                                    alt="Banner"
-                                    draggable={false}
-                                    style={{
-                                        position: 'absolute', top: 0, left: 0,
-                                        width: '100%', height: '100%', objectFit: 'cover', zIndex: 0,
-                                        transform: 'scale(1.05)',
-                                        filter: 'blur(0.5px)',
-                                        imageRendering: 'auto'
-                                    }}
-                                />
-                            )}
                             <div className="banner-overlay-profile" style={{
                                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                                 backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: '8px',
@@ -160,23 +147,9 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                         <div style={{
                             height: '120px',
                             backgroundColor: userProfile.banner.startsWith('#') ? userProfile.banner : 'transparent',
-                            position: 'relative', overflow: 'hidden'
-                        }}>
-                            {!userProfile.banner.startsWith('#') && (
-                                <img
-                                    src={userProfile.banner}
-                                    alt="Preview Banner"
-                                    draggable={false}
-                                    style={{
-                                        position: 'absolute', top: 0, left: 0,
-                                        width: '100%', height: '100%', objectFit: 'cover',
-                                        transform: 'scale(1.05)',
-                                        filter: 'blur(0.5px)',
-                                        imageRendering: 'auto'
-                                    }}
-                                />
-                            )}
-                        </div>
+                            backgroundImage: userProfile.banner.startsWith('#') ? 'none' : `url("${userProfile.banner}")`,
+                            backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'
+                        }}></div>
 
                         {/* Avatar */}
                         <div style={{

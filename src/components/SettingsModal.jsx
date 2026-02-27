@@ -78,7 +78,7 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
             case 'keybinds':
                 return <KeybindsTab />;
             case 'language':
-                return <LanguageTab />;
+                return <LanguageTab preferences={preferences} setPreferences={setPreferences} />;
             case 'advanced':
                 return <AdvancedTab />;
             default:
