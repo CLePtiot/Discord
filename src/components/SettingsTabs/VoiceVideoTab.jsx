@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import InlineModal from '../InlineModal';
+import ToggleSwitch from '../ToggleSwitch';
 
 const VoiceVideoTab = () => {
     const [isTesting, setIsTesting] = useState(false);
     const [volume, setVolume] = useState(0);
     const [showMicError, setShowMicError] = useState(false);
+    const [micErrorMsg, setMicErrorMsg] = useState("");
+
+    // Settings states
+    const [echoCancellation, setEchoCancellation] = useState(true);
+    const [noiseSuppression, setNoiseSuppression] = useState(true);
+
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
     const mediaStreamRef = useRef(null);
@@ -13,7 +20,21 @@ const VoiceVideoTab = () => {
 
     const startTest = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            // Check if mediaDevices API is available (it's removed entirely on insecure HTTP contexts)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setMicErrorMsg("Ton navigateur bloque l'accès au micro car tu n'es pas sur une connexion sécurisée (HTTPS). Pour tester le micro, ouvre l'application directement sur l'ordinateur hôte via http://localhost:5173");
+                setShowMicError(true);
+                return;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: echoCancellation,
+                    noiseSuppression: noiseSuppression,
+                    autoGainControl: true
+                },
+                video: false
+            });
             mediaStreamRef.current = stream;
 
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -25,10 +46,18 @@ const VoiceVideoTab = () => {
             const source = audioContextRef.current.createMediaStreamSource(stream);
             source.connect(analyserRef.current);
 
+            // Connect analyser to destination so user can hear themselves
+            analyserRef.current.connect(audioContextRef.current.destination);
+
             setIsTesting(true);
             updateVolume();
         } catch (err) {
             console.error("Microphone access denied or error occurred", err);
+            if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+                setMicErrorMsg("L'accès au microphone a été refusé. Vérifie les permissions de ton navigateur.");
+            } else {
+                setMicErrorMsg("Impossible d'accéder au microphone. Erreur : " + err.message);
+            }
             setShowMicError(true);
         }
     };
@@ -43,10 +72,12 @@ const VoiceVideoTab = () => {
 
         if (mediaStreamRef.current) {
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
         }
 
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
             audioContextRef.current.close();
+            audioContextRef.current = null;
         }
     };
 
@@ -137,36 +168,18 @@ const VoiceVideoTab = () => {
             <div>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>Paramètres Avancés</h3>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div>
+                    <div style={{ paddingRight: '16px' }}>
                         <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px' }}>Annulation de l'écho</div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Empêche le micro de capter le son des haut-parleurs.</div>
                     </div>
-                    {/* Fake toggle switch */}
-                    <div style={{
-                        width: '40px', height: '24px', borderRadius: '12px',
-                        backgroundColor: 'var(--success-color)', position: 'relative', cursor: 'pointer'
-                    }}>
-                        <div style={{
-                            width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white',
-                            position: 'absolute', top: '2px', right: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                        }}></div>
-                    </div>
+                    <ToggleSwitch checked={echoCancellation} onChange={() => setEchoCancellation(!echoCancellation)} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
+                    <div style={{ paddingRight: '16px' }}>
                         <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px' }}>Réduction de bruit</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Supprime les bruits de fond constants (ventillé, clavier).</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Supprime les bruits de fond constants (ventillateur, clavier).</div>
                     </div>
-                    {/* Fake toggle switch */}
-                    <div style={{
-                        width: '40px', height: '24px', borderRadius: '12px',
-                        backgroundColor: 'var(--success-color)', position: 'relative', cursor: 'pointer'
-                    }}>
-                        <div style={{
-                            width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white',
-                            position: 'absolute', top: '2px', right: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                        }}></div>
-                    </div>
+                    <ToggleSwitch checked={noiseSuppression} onChange={() => setNoiseSuppression(!noiseSuppression)} />
                 </div>
             </div>
 
@@ -175,7 +188,7 @@ const VoiceVideoTab = () => {
                 isOpen={showMicError}
                 onClose={() => setShowMicError(false)}
                 title="Accès au microphone refusé"
-                description="Veuillez autoriser l'accès au microphone dans les paramètres de votre navigateur pour utiliser le test vocal."
+                description={micErrorMsg || "Veuillez autoriser l'accès au microphone dans les paramètres de votre navigateur pour utiliser le test vocal."}
                 type="alert"
             />
         </motion.div>

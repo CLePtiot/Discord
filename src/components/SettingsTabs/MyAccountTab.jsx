@@ -6,6 +6,7 @@ import InlineModal from '../InlineModal';
 const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
     const [showEmail, setShowEmail] = useState(false);
     const avatarInputRef = useRef(null);
+    const bannerInputRef = useRef(null);
 
     // Edit Mode State
     const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -21,12 +22,21 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
         }
     };
 
+    const handleBannerChange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const objectUrl = URL.createObjectURL(file);
+            setUserProfile({ ...userProfile, banner: objectUrl });
+        }
+    };
+
     // Modal states
     const [usernameModal, setUsernameModal] = useState(false);
     const [emailModal, setEmailModal] = useState(false);
     const [passwordModal, setPasswordModal] = useState(false);
     const [phoneModal, setPhoneModal] = useState(false);
     const [twoFaModal, setTwoFaModal] = useState(false);
+    const [deleteModal, setDeleteModal] = useState(false);
     const [successModal, setSuccessModal] = useState({ open: false, title: '', description: '' });
 
     const handleSaveProfile = () => {
@@ -51,117 +61,165 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             }}>
                 {/* Banner */}
                 <div style={{
-                    height: '100px',
+                    height: '140px',
                     backgroundColor: userProfile?.banner?.startsWith?.('#') ? userProfile.banner : '#5865F2',
-                    backgroundImage: userProfile?.banner?.startsWith?.('#') ? 'none' : `url("${userProfile.banner}")`,
-                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'
-                }}></div>
+                    position: 'relative', cursor: 'pointer',
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '12px',
+                    overflow: 'hidden'
+                }}
+                    onClick={() => bannerInputRef.current?.click()}
+                    onMouseEnter={(e) => {
+                        const overlay = e.currentTarget.querySelector('.banner-overlay');
+                        if (overlay) overlay.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                        const overlay = e.currentTarget.querySelector('.banner-overlay');
+                        if (overlay) overlay.style.opacity = '0';
+                    }}
+                >
+                    {!userProfile?.banner?.startsWith?.('#') && userProfile?.banner && (
+                        <img
+                            src={userProfile.banner}
+                            alt="Banner"
+                            draggable={false}
+                            style={{
+                                position: 'absolute', top: 0, left: 0,
+                                width: '100%', height: '100%',
+                                objectFit: 'cover', zIndex: 0,
+                                transform: 'scale(1.05)',
+                                filter: 'blur(0.5px)',
+                                imageRendering: 'auto'
+                            }}
+                        />
+                    )}
+                    <div className="banner-overlay" style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        opacity: 0, transition: 'opacity 0.2s', zIndex: 1
+                    }}>
+                        <Camera color="white" size={24} />
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '14px' }}>Changer la bannière</span>
+                    </div>
+                </div>
+                <input
+                    type="file"
+                    ref={bannerInputRef}
+                    style={{ display: 'none' }}
+                    accept="image/*, .jpg, .jpeg, .png, .gif"
+                    onChange={handleBannerChange}
+                />
 
                 <div style={{ padding: '0 16px 16px 16px', position: 'relative' }}>
-                    {/* Avatar */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '-40px', marginBottom: '8px' }}>
-                        <div
-                            style={{
-                                width: '80px', height: '80px', borderRadius: '50%',
-                                border: '6px solid var(--bg-secondary)',
-                                backgroundImage: `url("${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}")`,
-                                backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-                                position: 'relative', cursor: 'pointer', flexShrink: 0
-                            }}
-                            onClick={() => avatarInputRef.current?.click()}
-                        >
-                            <div style={{
-                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                                backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                opacity: 0, transition: 'opacity 0.2s'
-                            }}
-                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                                onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '-40px', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
+                            {/* Avatar */}
+                            <div
+                                style={{
+                                    width: '100px', height: '100px', borderRadius: '50%',
+                                    border: '6px solid var(--bg-secondary)',
+                                    backgroundImage: `url("${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}")`,
+                                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+                                    position: 'relative', cursor: 'pointer', flexShrink: 0,
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                                }}
+                                onClick={() => avatarInputRef.current?.click()}
                             >
-                                <Camera color="white" size={20} />
+                                <div style={{
+                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                    backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    opacity: 0, transition: 'opacity 0.2s', flexDirection: 'column', gap: '4px'
+                                }}
+                                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                                >
+                                    <Camera color="white" size={24} />
+                                    <span style={{ color: 'white', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' }}>Éditer</span>
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                ref={avatarInputRef}
+                                style={{ display: 'none' }}
+                                accept="image/*, .jpg, .jpeg, .png, .gif"
+                                onChange={handleAvatarChange}
+                            />
+
+                            {/* Name */}
+                            <div style={{ marginBottom: '12px' }}>
+                                {isEditingProfile ? (
+                                    <input
+                                        type="text"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        style={{
+                                            background: 'var(--bg-tertiary)', color: 'var(--text-header)', border: '1px solid var(--border-color)',
+                                            padding: '4px 8px', borderRadius: '4px', fontSize: '20px', fontWeight: 700, width: '200px'
+                                        }}
+                                    />
+                                ) : (
+                                    <h3 style={{ color: 'var(--text-header)', fontSize: '24px', fontWeight: 800, margin: 0, lineHeight: 1 }}>
+                                        {userProfile?.name || 'Satoshi'}
+                                    </h3>
+                                )}
                             </div>
                         </div>
-                        <button
-                            onClick={() => avatarInputRef.current?.click()}
-                            style={{
-                                background: 'var(--accent-color)', color: 'white', border: 'none',
-                                padding: '6px 14px', borderRadius: '4px', cursor: 'pointer',
-                                fontWeight: 500, fontSize: '12px', whiteSpace: 'nowrap', marginBottom: '6px'
-                            }}
-                        >
-                            Changer l'avatar
-                        </button>
-                        <input
-                            type="file"
-                            ref={avatarInputRef}
-                            style={{ display: 'none' }}
-                            accept="image/*, .jpg, .jpeg, .png, .gif"
-                            onChange={handleAvatarChange}
-                        />
-                    </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                        <div>
+                        {/* Edit Buttons */}
+                        <div style={{ marginTop: '52px' }}>
                             {isEditingProfile ? (
-                                <input
-                                    type="text"
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
-                                    style={{
-                                        background: 'var(--bg-tertiary)', color: 'var(--text-header)', border: '1px solid var(--border-color)',
-                                        padding: '4px 8px', borderRadius: '4px', fontSize: '20px', fontWeight: 700, width: '200px', marginBottom: '8px'
-                                    }}
-                                />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                        onClick={() => {
+                                            setEditName(userProfile?.name || '');
+                                            setEditBio(userProfile?.bio || '');
+                                            setEditStatus(userProfile?.status || 'En ligne');
+                                            setIsEditingProfile(false);
+                                        }}
+                                        style={{
+                                            background: 'transparent', color: 'var(--text-normal)', border: 'none',
+                                            padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '14px',
+                                            transition: 'background 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        style={{
+                                            background: 'var(--success-color)', color: 'white', border: 'none',
+                                            padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '14px',
+                                            transition: 'background 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#1e8f4c'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'var(--success-color)'}
+                                    >
+                                        Enregistrer
+                                    </button>
+                                </div>
                             ) : (
-                                <h3 style={{ color: 'var(--text-header)', fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>
-                                    {userProfile?.name || 'Satoshi'}
-                                </h3>
-                            )}
-                        </div>
-
-                        {isEditingProfile ? (
-                            <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
                                     onClick={() => {
                                         setEditName(userProfile?.name || '');
                                         setEditBio(userProfile?.bio || '');
                                         setEditStatus(userProfile?.status || 'En ligne');
-                                        setIsEditingProfile(false);
+                                        setIsEditingProfile(true);
                                     }}
                                     style={{
-                                        background: 'transparent', color: 'var(--text-normal)', border: 'none',
-                                        padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
+                                        background: 'var(--accent-color)', color: 'white', border: 'none',
+                                        padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '14px',
+                                        transition: 'background 0.2s'
                                     }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#4752c4'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-color)'}
                                 >
-                                    Annuler
+                                    Modifier le profil
                                 </button>
-                                <button
-                                    onClick={handleSaveProfile}
-                                    style={{
-                                        background: 'var(--success-color)', color: 'white', border: 'none',
-                                        padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
-                                    }}
-                                >
-                                    Enregistrer
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    setEditName(userProfile?.name || '');
-                                    setEditBio(userProfile?.bio || '');
-                                    setEditStatus(userProfile?.status || 'En ligne');
-                                    setIsEditingProfile(true);
-                                }}
-                                style={{
-                                    background: 'var(--accent-color)', color: 'white', border: 'none',
-                                    padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
-                                }}
-                            >
-                                Modifier le profil
-                            </button>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -304,33 +362,62 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
                     Mot de passe et authentification
                 </h3>
-
-                <button style={{
-                    background: 'var(--accent-color)', color: 'white', border: 'none',
-                    padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
-                    marginBottom: '24px'
-                }} onClick={() => setPasswordModal(true)}>
-                    Changer le mot de passe
-                </button>
-
-                <div style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '16px', borderRadius: '8px', backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid rgba(255,255,255,0.06)'
-                }}>
-                    <Shield size={40} color="var(--text-muted)" />
-                    <div style={{ flex: 1 }}>
-                        <div style={{ color: 'var(--text-header)', fontWeight: 600, marginBottom: '4px' }}>
-                            Authentification à deux facteurs
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                    {/* Change Password Row */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.04)'
+                    }}>
+                        <div style={{ flex: 1, paddingRight: '16px' }}>
+                            <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Key size={16} color="var(--accent-color)" />
+                                Mot de passe
+                            </div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                Modifie ton mot de passe actuel pour sécuriser ton compte.
+                            </div>
                         </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                            Protège ton compte avec une couche de sécurité supplémentaire.
-                        </div>
+                        <button
+                            onClick={() => setPasswordModal(true)}
+                            style={{
+                                background: 'var(--accent-color)', color: 'white', border: 'none',
+                                padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px',
+                                transition: 'opacity 0.2s', whiteSpace: 'nowrap', flexShrink: 0
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                            Modifier
+                        </button>
                     </div>
-                    <button style={{
-                        background: 'var(--accent-color)', color: 'white', border: 'none',
-                        padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
-                    }} onClick={() => setTwoFaModal(true)}>Activer</button>
+
+                    {/* 2FA Row */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 0'
+                    }}>
+                        <div style={{ flex: 1, paddingRight: '16px' }}>
+                            <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Shield size={16} color="var(--accent-color)" />
+                                Authentification à deux facteurs
+                            </div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                Protège ton compte avec une couche de sécurité supplémentaire.
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setTwoFaModal(true)}
+                            style={{
+                                background: 'var(--accent-color)', color: 'white', border: 'none',
+                                padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px',
+                                transition: 'opacity 0.2s', whiteSpace: 'nowrap', flexShrink: 0
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                            Activer
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -341,12 +428,37 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                 <h3 style={{ color: '#da373c', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
                     Suppression du compte
                 </h3>
-                <div className="danger-zone">
-                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>
-                        La suppression de ton compte est une action irréversible. Toutes tes données seront définitivement effacées.
-                    </p>
-                    <button className="danger-btn-outline" onClick={() => setDeleteModal(true)}>
-                        Supprimer le compte
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 0'
+                }}>
+                    <div style={{ flex: 1, paddingRight: '16px' }}>
+                        <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px' }}>
+                            Supprimer le compte
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                            La suppression de ton compte est irréversible. Toutes tes données seront définitivement effacées.
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setDeleteModal(true)}
+                        style={{
+                            background: 'transparent',
+                            color: '#da373c',
+                            border: '1px solid #da373c',
+                            padding: '8px 16px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                            fontSize: '13px',
+                            transition: 'all 0.2s ease',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#da373c'; e.currentTarget.style.color = 'white'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#da373c'; }}
+                    >
+                        Supprimer
                     </button>
                 </div>
             </div>
@@ -390,8 +502,15 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                 isOpen={passwordModal}
                 onClose={() => setPasswordModal(false)}
                 title="Changer le mot de passe"
-                description="Un e-mail de réinitialisation a été envoyé à ton adresse. Consulte ta boîte de réception pour définir un nouveau mot de passe."
-                type="alert"
+                description="Saisis ton nouveau mot de passe ci-dessous :"
+                type="prompt"
+                defaultValue=""
+                confirmLabel="Enregistrer"
+                onConfirm={(newPassword) => {
+                    if (newPassword && newPassword.trim()) {
+                        setSuccessModal({ open: true, title: 'Mot de passe modifié', description: 'Ton mot de passe a été mis à jour avec succès.' });
+                    }
+                }}
             />
 
             {/* Phone number */}

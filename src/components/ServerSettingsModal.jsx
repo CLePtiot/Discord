@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
     X, Shield, Users, Hash, Settings, ShieldAlert,
-    Crown, Star, Zap, Sword, Award, GripVertical, Plus, Trash2, Check
+    Crown, Star, Zap, Sword, Award, GripVertical, Plus, Trash2, Check,
+    MessageSquare, Mic, MicOff, Headphones, Video, Link, AtSign,
+    Eye, EyeOff, Pin, Bell, Volume2, UserPlus, UserMinus, UserX,
+    Megaphone, History, Smile, Image, Globe, Lock, Webhook
 } from 'lucide-react';
 import { useToast } from './Toast';
 
@@ -86,12 +89,43 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
             color: '#949ba4',
             badge: null,
             permissions: {
+                // Messages
                 sendMessages: true,
                 attachFiles: false,
+                embedLinks: true,
+                addReactions: true,
+                useEmojis: true,
+                mentionEveryone: false,
+                manageMessages: false,
+                readMessageHistory: true,
+                sendTTSMessages: false,
+                pinMessages: false,
+                // Voice
+                connectVoice: true,
+                speakVoice: true,
+                videoVoice: false,
+                muteMembers: false,
+                deafenMembers: false,
+                moveMembers: false,
+                useVAD: true,
+                prioritySpeaker: false,
+                // Members
                 kickMembers: false,
                 banMembers: false,
+                timeoutMembers: false,
+                createInvites: true,
+                changeNickname: true,
+                manageNicknames: false,
+                // Channels
+                viewChannels: true,
+                manageChannels: false,
+                manageWebhooks: false,
+                // Advanced
                 manageServer: false,
-                manageRoles: false
+                manageRoles: false,
+                manageEmojis: false,
+                viewAuditLog: false,
+                administrator: false
             }
         };
         setRoles([...roles, newRole]);
@@ -343,7 +377,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
                         {/* Permissions: Messages */}
                         <div className="role-card">
-                            <h3 className="role-section-title"><Hash size={16} /> PERMISSIONS DE MESSAGES</h3>
+                            <h3 className="role-section-title"><MessageSquare size={16} /> PERMISSIONS DE MESSAGES</h3>
                             <PermissionToggle
                                 label="Envoyer des messages"
                                 description="Autorise les membres à envoyer des messages dans les salons textuels."
@@ -356,6 +390,122 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                                 description="Autorise l'envoi d'images et de fichiers locaux."
                                 value={selectedRole.permissions.attachFiles}
                                 onChange={(val) => handlePermissionChange('attachFiles', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Intégrer des liens"
+                                description="Autorise les liens à afficher un aperçu intégré dans le chat."
+                                value={selectedRole.permissions.embedLinks}
+                                onChange={(val) => handlePermissionChange('embedLinks', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Ajouter des réactions"
+                                description="Permet d'ajouter des réactions aux messages."
+                                value={selectedRole.permissions.addReactions}
+                                onChange={(val) => handlePermissionChange('addReactions', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Utiliser des émojis externes"
+                                description="Permet d'utiliser des émojis provenant d'autres serveurs."
+                                value={selectedRole.permissions.useEmojis}
+                                onChange={(val) => handlePermissionChange('useEmojis', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Mentionner @everyone et @here"
+                                description="Permet de mentionner tous les membres ou les membres en ligne."
+                                value={selectedRole.permissions.mentionEveryone}
+                                onChange={(val) => handlePermissionChange('mentionEveryone', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Gérer les messages"
+                                description="Permet de supprimer ou d'épingler les messages des autres membres."
+                                value={selectedRole.permissions.manageMessages}
+                                onChange={(val) => handlePermissionChange('manageMessages', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Voir l'historique des messages"
+                                description="Permet de lire les messages envoyés avant l'arrivée du membre."
+                                value={selectedRole.permissions.readMessageHistory}
+                                onChange={(val) => handlePermissionChange('readMessageHistory', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Envoyer des messages TTS"
+                                description="Autorise l'envoi de messages text-to-speech."
+                                value={selectedRole.permissions.sendTTSMessages}
+                                onChange={(val) => handlePermissionChange('sendTTSMessages', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Épingler des messages"
+                                description="Permet d'épingler des messages dans un salon."
+                                value={selectedRole.permissions.pinMessages}
+                                onChange={(val) => handlePermissionChange('pinMessages', val)}
+                            />
+                        </div>
+
+                        {/* Permissions: Vocales */}
+                        <div className="role-card">
+                            <h3 className="role-section-title"><Headphones size={16} /> PERMISSIONS VOCALES</h3>
+                            <PermissionToggle
+                                label="Se connecter en vocal"
+                                description="Permet de rejoindre un salon vocal."
+                                value={selectedRole.permissions.connectVoice}
+                                onChange={(val) => handlePermissionChange('connectVoice', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Parler"
+                                description="Permet de parler dans les salons vocaux."
+                                value={selectedRole.permissions.speakVoice}
+                                onChange={(val) => handlePermissionChange('speakVoice', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Vidéo"
+                                description="Permet de partager sa caméra dans les salons vocaux."
+                                value={selectedRole.permissions.videoVoice}
+                                onChange={(val) => handlePermissionChange('videoVoice', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Rendre muet des membres"
+                                description="Permet de couper le micro d'autres membres en vocal."
+                                value={selectedRole.permissions.muteMembers}
+                                onChange={(val) => handlePermissionChange('muteMembers', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Mettre en sourdine des membres"
+                                description="Permet de couper le son d'autres membres en vocal."
+                                value={selectedRole.permissions.deafenMembers}
+                                onChange={(val) => handlePermissionChange('deafenMembers', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Déplacer des membres"
+                                description="Permet de déplacer des membres d'un salon vocal à un autre."
+                                value={selectedRole.permissions.moveMembers}
+                                onChange={(val) => handlePermissionChange('moveMembers', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Utiliser la détection vocale"
+                                description="Permet d'utiliser la VAD au lieu du push-to-talk."
+                                value={selectedRole.permissions.useVAD}
+                                onChange={(val) => handlePermissionChange('useVAD', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Voix prioritaire"
+                                description="Permet d'être entendu plus facilement en vocal."
+                                value={selectedRole.permissions.prioritySpeaker}
+                                onChange={(val) => handlePermissionChange('prioritySpeaker', val)}
                             />
                         </div>
 
@@ -375,6 +525,59 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                                 value={selectedRole.permissions.banMembers}
                                 onChange={(val) => handlePermissionChange('banMembers', val)}
                             />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Exclure temporairement des membres"
+                                description="Empêche un membre de parler ou réagir pour une durée définie."
+                                value={selectedRole.permissions.timeoutMembers}
+                                onChange={(val) => handlePermissionChange('timeoutMembers', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Créer des invitations"
+                                description="Permet de créer un lien d'invitation pour le serveur."
+                                value={selectedRole.permissions.createInvites}
+                                onChange={(val) => handlePermissionChange('createInvites', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Changer son pseudo"
+                                description="Permet aux membres de changer leur propre pseudo."
+                                value={selectedRole.permissions.changeNickname}
+                                onChange={(val) => handlePermissionChange('changeNickname', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Gérer les pseudos"
+                                description="Permet de modifier le pseudo des autres membres."
+                                value={selectedRole.permissions.manageNicknames}
+                                onChange={(val) => handlePermissionChange('manageNicknames', val)}
+                            />
+                        </div>
+
+                        {/* Permissions: Salons */}
+                        <div className="role-card">
+                            <h3 className="role-section-title"><Hash size={16} /> PERMISSIONS DES SALONS</h3>
+                            <PermissionToggle
+                                label="Voir les salons"
+                                description="Permet de voir les salons textuels et vocaux du serveur."
+                                value={selectedRole.permissions.viewChannels}
+                                onChange={(val) => handlePermissionChange('viewChannels', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Gérer les salons"
+                                description="Permet de créer, modifier et supprimer des salons."
+                                value={selectedRole.permissions.manageChannels}
+                                onChange={(val) => handlePermissionChange('manageChannels', val)}
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Gérer les webhooks"
+                                description="Permet de créer, modifier et supprimer les webhooks du serveur."
+                                value={selectedRole.permissions.manageWebhooks}
+                                onChange={(val) => handlePermissionChange('manageWebhooks', val)}
+                            />
                         </div>
 
                         {/* Permissions: Admin */}
@@ -393,6 +596,30 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                                 description="Créer, modifier ou supprimer des rôles inférieurs."
                                 value={selectedRole.permissions.manageRoles}
                                 onChange={(val) => handlePermissionChange('manageRoles', val)}
+                                isDanger
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Gérer les émojis et stickers"
+                                description="Permet d'ajouter ou supprimer des émojis personnalisés."
+                                value={selectedRole.permissions.manageEmojis}
+                                onChange={(val) => handlePermissionChange('manageEmojis', val)}
+                                isDanger
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Voir le journal d'audit"
+                                description="Permet de voir les actions des autres administrateurs."
+                                value={selectedRole.permissions.viewAuditLog}
+                                onChange={(val) => handlePermissionChange('viewAuditLog', val)}
+                                isDanger
+                            />
+                            <div className="role-separator"></div>
+                            <PermissionToggle
+                                label="Administrateur"
+                                description="Donne toutes les permissions et ignore les restrictions de salon. C'est une permission dangereuse !"
+                                value={selectedRole.permissions.administrator}
+                                onChange={(val) => handlePermissionChange('administrator', val)}
                                 isDanger
                             />
                         </div>

@@ -78,14 +78,30 @@ export const AppProvider = ({ children }) => {
                     name: 'Administrateur',
                     color: '#da373c',
                     badge: 'crown',
-                    permissions: { sendMessages: true, attachFiles: true, kickMembers: true, banMembers: true, manageServer: true, manageRoles: true }
+                    permissions: {
+                        sendMessages: true, attachFiles: true, embedLinks: true, addReactions: true, useEmojis: true,
+                        mentionEveryone: true, manageMessages: true, readMessageHistory: true, sendTTSMessages: true, pinMessages: true,
+                        connectVoice: true, speakVoice: true, videoVoice: true, muteMembers: true, deafenMembers: true,
+                        moveMembers: true, useVAD: true, prioritySpeaker: true,
+                        kickMembers: true, banMembers: true, timeoutMembers: true, createInvites: true, changeNickname: true, manageNicknames: true,
+                        viewChannels: true, manageChannels: true, manageWebhooks: true,
+                        manageServer: true, manageRoles: true, manageEmojis: true, viewAuditLog: true, administrator: true
+                    }
                 },
                 {
                     id: 'r2',
                     name: 'Membre',
                     color: '#949ba4',
                     badge: null,
-                    permissions: { sendMessages: true, attachFiles: true, kickMembers: false, banMembers: false, manageServer: false, manageRoles: false }
+                    permissions: {
+                        sendMessages: true, attachFiles: true, embedLinks: true, addReactions: true, useEmojis: true,
+                        mentionEveryone: false, manageMessages: false, readMessageHistory: true, sendTTSMessages: false, pinMessages: false,
+                        connectVoice: true, speakVoice: true, videoVoice: false, muteMembers: false, deafenMembers: false,
+                        moveMembers: false, useVAD: true, prioritySpeaker: false,
+                        kickMembers: false, banMembers: false, timeoutMembers: false, createInvites: true, changeNickname: true, manageNicknames: false,
+                        viewChannels: true, manageChannels: false, manageWebhooks: false,
+                        manageServer: false, manageRoles: false, manageEmojis: false, viewAuditLog: false, administrator: false
+                    }
                 }
             ]
         });

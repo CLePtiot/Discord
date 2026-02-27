@@ -9,6 +9,9 @@ import NotificationsTab from './SettingsTabs/NotificationsTab';
 import PrivacyTab from './SettingsTabs/PrivacyTab';
 import AccessibilityTab from './SettingsTabs/AccessibilityTab';
 import KeybindsTab from './SettingsTabs/KeybindsTab';
+import TextImagesTab from './SettingsTabs/TextImagesTab';
+import LanguageTab from './SettingsTabs/LanguageTab';
+import AdvancedTab from './SettingsTabs/AdvancedTab';
 
 const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferences, setPreferences, onLogout }) => {
     const [activeTab, setActiveTab] = useState('my-account');
@@ -28,8 +31,11 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                 { id: 'appearance', label: 'Apparence' },
                 { id: 'accessibility', label: 'Accessibilité' },
                 { id: 'voice-video', label: 'Voix & Vidéo' },
+                { id: 'text-images', label: 'Texte & Images' },
                 { id: 'notifications', label: 'Notifications' },
                 { id: 'keybinds', label: 'Raccourcis clavier' },
+                { id: 'language', label: 'Langue' },
+                { id: 'advanced', label: 'Avancé' },
             ]
         }
     ];
@@ -37,14 +43,18 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && isOpen) {
+                // Don't close settings if a child InlineModal is open (z-index 10000)
+                const topModal = document.querySelector('[style*="z-index: 10000"]') ||
+                    document.querySelector('[style*="zIndex: 10000"]');
+                if (topModal) return; // Let InlineModal handle it
                 e.preventDefault();
                 e.stopPropagation();
                 onClose();
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown, true);
-        return () => window.removeEventListener('keydown', handleKeyDown, true);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
     const renderTabContent = () => {
@@ -61,10 +71,16 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                 return <AccessibilityTab preferences={preferences} setPreferences={setPreferences} />;
             case 'voice-video':
                 return <VoiceVideoTab />;
+            case 'text-images':
+                return <TextImagesTab />;
             case 'notifications':
                 return <NotificationsTab />;
             case 'keybinds':
                 return <KeybindsTab />;
+            case 'language':
+                return <LanguageTab />;
+            case 'advanced':
+                return <AdvancedTab />;
             default:
                 return null;
         }

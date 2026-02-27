@@ -61,6 +61,11 @@ export const VoiceProvider = ({ children }) => {
         if (isScreenSharing) {
             handleStopScreenShare();
         } else {
+            // Check if getDisplayMedia is available (requires HTTPS or localhost)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                alert("Le partage d'écran n'est pas disponible.\n\nCette fonctionnalité nécessite un accès via localhost ou HTTPS.\nEssayez d'ouvrir : http://localhost:5173");
+                return;
+            }
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                 displayStreamRef.current = stream;
@@ -71,6 +76,11 @@ export const VoiceProvider = ({ children }) => {
                 };
             } catch (err) {
                 console.error("Screen share cancelled or failed", err);
+                if (err.name === 'NotAllowedError') {
+                    alert("Partage d'écran annulé ou refusé par l'utilisateur.");
+                } else {
+                    alert("Erreur lors du partage d'écran : " + err.message);
+                }
             }
         }
     };

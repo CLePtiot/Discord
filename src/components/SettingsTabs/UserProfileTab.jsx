@@ -64,48 +64,60 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                     <div style={{ marginBottom: '24px' }}>
                         <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>Bannière de profil</h3>
                         <div style={{
-                            height: '100px', width: '100%', borderRadius: '8px',
+                            height: '140px', width: '100%', borderRadius: '8px',
                             backgroundColor: userProfile.banner.startsWith('#') ? userProfile.banner : 'transparent',
-                            backgroundImage: userProfile.banner.startsWith('#') ? 'none' : `url("${userProfile.banner}")`,
-                            backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
                             marginBottom: '12px', position: 'relative', cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)', transition: 'filter 0.2s',
+                            display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '12px',
+                            overflow: 'hidden'
                         }}
                             onClick={() => bannerInputRef.current?.click()}
-                        >
-                            <div style={{
-                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                                backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '8px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                opacity: 0, transition: 'opacity 0.2s'
+                            onMouseEnter={(e) => {
+                                const overlay = e.currentTarget.querySelector('.banner-overlay-profile');
+                                if (overlay) overlay.style.opacity = '1';
                             }}
-                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                                onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                            >
+                            onMouseLeave={(e) => {
+                                const overlay = e.currentTarget.querySelector('.banner-overlay-profile');
+                                if (overlay) overlay.style.opacity = '0';
+                            }}
+                        >
+                            {!userProfile.banner.startsWith('#') && (
+                                <img
+                                    src={userProfile.banner}
+                                    alt="Banner"
+                                    draggable={false}
+                                    style={{
+                                        position: 'absolute', top: 0, left: 0,
+                                        width: '100%', height: '100%', objectFit: 'cover', zIndex: 0,
+                                        transform: 'scale(1.05)',
+                                        filter: 'blur(0.5px)',
+                                        imageRendering: 'auto'
+                                    }}
+                                />
+                            )}
+                            <div className="banner-overlay-profile" style={{
+                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: '8px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                opacity: 0, transition: 'opacity 0.2s', zIndex: 1
+                            }}>
                                 <Camera color="white" size={32} />
                                 <span style={{ color: 'white', marginLeft: '8px', fontWeight: 600 }}>Changer la bannière</span>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                onClick={() => bannerInputRef.current?.click()}
-                                style={{
-                                    background: 'var(--accent-color)', color: 'white', border: 'none',
-                                    padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500
-                                }}
-                            >
-                                Importer une image
-                            </button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Couleur de fond :</span>
                             <input
                                 type="color"
                                 value={userProfile.banner.startsWith('#') ? userProfile.banner : '#5865F2'}
                                 onChange={(e) => setUserProfile({ ...userProfile, banner: e.target.value })}
                                 style={{
-                                    height: '36px',
+                                    height: '24px', width: '24px',
                                     border: 'none',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
-                                    background: 'transparent'
+                                    background: 'transparent',
+                                    padding: 0
                                 }}
                             />
                         </div>
@@ -148,9 +160,23 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                         <div style={{
                             height: '120px',
                             backgroundColor: userProfile.banner.startsWith('#') ? userProfile.banner : 'transparent',
-                            backgroundImage: userProfile.banner.startsWith('#') ? 'none' : `url("${userProfile.banner}")`,
-                            backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'
-                        }}></div>
+                            position: 'relative', overflow: 'hidden'
+                        }}>
+                            {!userProfile.banner.startsWith('#') && (
+                                <img
+                                    src={userProfile.banner}
+                                    alt="Preview Banner"
+                                    draggable={false}
+                                    style={{
+                                        position: 'absolute', top: 0, left: 0,
+                                        width: '100%', height: '100%', objectFit: 'cover',
+                                        transform: 'scale(1.05)',
+                                        filter: 'blur(0.5px)',
+                                        imageRendering: 'auto'
+                                    }}
+                                />
+                            )}
+                        </div>
 
                         {/* Avatar */}
                         <div style={{

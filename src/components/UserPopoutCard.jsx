@@ -62,9 +62,23 @@ const UserPopoutCard = ({ user, position, onClose }) => {
                 <div style={{
                     height: '120px',
                     backgroundColor: banner.startsWith('#') ? banner : 'transparent',
-                    backgroundImage: banner.startsWith('#') ? 'none' : `url("${banner}")`,
-                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'
-                }}></div>
+                    position: 'relative', overflow: 'hidden'
+                }}>
+                    {!banner.startsWith('#') && (
+                        <img
+                            src={banner}
+                            alt="Banner"
+                            draggable={false}
+                            style={{
+                                position: 'absolute', top: 0, left: 0,
+                                width: '100%', height: '100%', objectFit: 'cover',
+                                transform: 'scale(1.05)',
+                                filter: 'blur(0.5px)',
+                                imageRendering: 'auto'
+                            }}
+                        />
+                    )}
+                </div>
 
                 {/* Avatar */}
                 <div style={{

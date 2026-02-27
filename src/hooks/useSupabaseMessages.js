@@ -168,7 +168,9 @@ export default function useSupabaseMessages(channelId, serverId) {
     const sendMessage = useCallback(async (content, image, userProfile) => {
         if (!content?.trim() && !image) return;
 
-        const optimisticId = crypto.randomUUID();
+        const optimisticId = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : Date.now().toString(36) + Math.random().toString(36).substring(2);
         const now = new Date();
         const timeString = `Aujourd'hui à ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 

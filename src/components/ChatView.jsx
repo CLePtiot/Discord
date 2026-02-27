@@ -213,10 +213,12 @@ const ChatView = ({
         document.body.removeChild(a);
     }, []);
 
-    const filteredMessages = messages.filter(msg =>
-        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        msg.author.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredMessages = messages.filter(msg => {
+        const contentStr = msg.content || '';
+        const authorStr = msg.author || '';
+        return contentStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            authorStr.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     if (isDirectMessage) {
         return (
