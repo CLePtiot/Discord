@@ -15,7 +15,7 @@ const roleBadges = [
     { id: 'award', icon: Award, label: 'Trophée' }
 ];
 
-const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdateCategories }) => {
+const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdateCategories, initialRoles, onUpdateRoles }) => {
     const [activeTab, setActiveTab] = useState('Vue d\'ensemble');
     const { showToast } = useToast();
 
@@ -23,37 +23,8 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
     const [currentServerName, setCurrentServerName] = useState(serverName || '');
 
     // -- State for Rôles --
-    const [roles, setRoles] = useState([
-        {
-            id: 'r1',
-            name: 'Administrateur',
-            color: '#da373c',
-            badge: 'crown',
-            permissions: {
-                sendMessages: true,
-                attachFiles: true,
-                kickMembers: true,
-                banMembers: true,
-                manageServer: true,
-                manageRoles: true
-            }
-        },
-        {
-            id: 'r2',
-            name: 'Membre',
-            color: '#949ba4',
-            badge: null,
-            permissions: {
-                sendMessages: true,
-                attachFiles: true,
-                kickMembers: false,
-                banMembers: false,
-                manageServer: false,
-                manageRoles: false
-            }
-        }
-    ]);
-    const [selectedRoleId, setSelectedRoleId] = useState('r1');
+    const [roles, setRoles] = useState(initialRoles || []);
+    const [selectedRoleId, setSelectedRoleId] = useState(initialRoles?.[0]?.id || 'r1');
     const selectedRole = roles.find(r => r.id === selectedRoleId);
 
     // -- State for Channels (Drag & Drop) --
@@ -63,6 +34,10 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
     useEffect(() => {
         if (isOpen) {
             setCurrentServerName(serverName || '');
+            if (initialRoles && initialRoles.length > 0) {
+                setRoles(initialRoles);
+                setSelectedRoleId(initialRoles[0].id);
+            }
             // Flatten categories down to just channels for easy reordering across the board
             const allChannels = [];
             categories?.forEach(cat => {
@@ -147,6 +122,9 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
     };
 
     const handleSaveRoles = () => {
+        if (onUpdateRoles) {
+            onUpdateRoles(roles);
+        }
         showToast('Rôles mis à jour', 'success');
     };
 
@@ -478,14 +456,14 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                         display: flex;
                     }
                     .settings-layout {
-                        display: flex; width: 100%; height: 100%; maxWidth: 1200px; margin: 0 auto;
+                        display: flex; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;
                     }
                     .settings-sidebar-wrapper {
                         width: 280px; background: rgba(30, 31, 34, 0.3);
                         display: flex; justify-content: flex-end; padding: 60px 20px 60px 0;
                     }
                     .settings-sidebar {
-                        width: 218px; display: flex; flexDirection: column; gap: 2px;
+                        width: 218px; display: flex; flex-direction: column; gap: 2px;
                     }
                     .settings-sidebar-header {
                         color: var(--text-muted); font-size: 11px; font-weight: 800;
@@ -498,7 +476,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                     .settings-tab:hover { background: var(--bg-hover); color: var(--text-header); }
                     .settings-tab.active { background: var(--bg-active); color: var(--text-header); }
                     .settings-section-title {
-                        color: var(--text-muted); font-size: 11px; font-weight: 800; uppercase;
+                        color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase;
                         padding: 16px 10px 6px 10px; margin: 0;
                     }
                     .settings-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 10px; }
@@ -534,7 +512,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
                     /* Rôles Cards */
                     .role-card { background: rgba(43,45,49,0.5); border-radius: 8px; padding: 16px; border: 1px solid rgba(255,255,255,0.06); }
-                    .role-section-title { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: flex; alignItems: center; gap: 8px; margin-bottom: 16px; }
+                    .role-section-title { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
                     .role-separator { height: 1px; background: rgba(255,255,255,0.06); margin: 16px 0; }
                 `}</style>
                 <div className="settings-layout">

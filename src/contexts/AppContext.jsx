@@ -20,6 +20,7 @@ export const AppProvider = ({ children }) => {
     const [channelsByServer, setChannelsByServer] = useLocalStorage('freedom-channels', CHANNELS_BY_SERVER);
     const [members, setMembers] = useLocalStorage('freedom-members', MOCK_MEMBERS);
     const [mutedServers, setMutedServers] = useLocalStorage('freedom-muted-servers', {});
+    const [rolesByServer, setRolesByServer] = useLocalStorage('freedom-roles', {});
 
     const [userProfile, setUserProfile] = useLocalStorage('freedom-profile', {
         name: 'Satoshi (Moi)',
@@ -68,6 +69,25 @@ export const AppProvider = ({ children }) => {
                 { category: 'Vocal', channels: [{ id: `cv_${Date.now()}`, name: 'Discussion', type: 'voice' }] }
             ]
         });
+        setRolesByServer({
+            ...rolesByServer,
+            [newServerId]: [
+                {
+                    id: 'r1',
+                    name: 'Administrateur',
+                    color: '#da373c',
+                    badge: 'crown',
+                    permissions: { sendMessages: true, attachFiles: true, kickMembers: true, banMembers: true, manageServer: true, manageRoles: true }
+                },
+                {
+                    id: 'r2',
+                    name: 'Membre',
+                    color: '#949ba4',
+                    badge: null,
+                    permissions: { sendMessages: true, attachFiles: true, kickMembers: false, banMembers: false, manageServer: false, manageRoles: false }
+                }
+            ]
+        });
 
         setActiveServerId(newServerId);
     };
@@ -91,6 +111,7 @@ export const AppProvider = ({ children }) => {
         members, setMembers,
         handleBanUser,
         mutedServers, setMutedServers,
+        rolesByServer, setRolesByServer,
         userProfile, setUserProfile,
         preferences, setPreferences,
         handleLogout, handleCreateServer,

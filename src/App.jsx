@@ -30,7 +30,8 @@ function App() {
     isMobileMenuOpen, setIsMobileMenuOpen,
     preferences, userProfile, setUserProfile, setPreferences, handleLogout,
     handleCreateServer, activeServer, serverChannels,
-    activeServerId, channelsByServer, setChannelsByServer, members, handleBanUser
+    activeServerId, channelsByServer, setChannelsByServer, members, handleBanUser,
+    rolesByServer, setRolesByServer
   } = useAppContext();
 
   const { playMessageSend, playNotificationSound, playCommandOpen } = useSoundFeedback(preferences.appSounds !== false);
@@ -137,6 +138,28 @@ function App() {
                 setChannelsByServer({
                   ...channelsByServer,
                   [activeServerId]: newCategories
+                });
+              }}
+              initialRoles={rolesByServer[activeServerId] || [
+                {
+                  id: 'r1',
+                  name: 'Administrateur',
+                  color: '#da373c',
+                  badge: 'crown',
+                  permissions: { sendMessages: true, attachFiles: true, kickMembers: true, banMembers: true, manageServer: true, manageRoles: true }
+                },
+                {
+                  id: 'r2',
+                  name: 'Membre',
+                  color: '#949ba4',
+                  badge: null,
+                  permissions: { sendMessages: true, attachFiles: true, kickMembers: false, banMembers: false, manageServer: false, manageRoles: false }
+                }
+              ]}
+              onUpdateRoles={(newRoles) => {
+                setRolesByServer({
+                  ...rolesByServer,
+                  [activeServerId]: newRoles
                 });
               }}
             />
