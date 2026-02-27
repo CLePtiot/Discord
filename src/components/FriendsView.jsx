@@ -4,6 +4,8 @@ import { Users, UserPlus, MoreVertical, MessageSquare, X, UserX, Ban, Volume2, C
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from './Toast';
 import UserPopoutCard from './UserPopoutCard';
+import { useVoiceContext } from '../contexts/VoiceContext';
+import { useAppContext } from '../contexts/AppContext';
 
 // ── Framer Motion Variants ──────────────────────────────────────────
 const listVariants = {
@@ -17,7 +19,9 @@ const itemVariants = {
 };
 
 // ── Main Component ──────────────────────────────────────────────────
-const FriendsView = ({ onStartCall }) => {
+const FriendsView = () => {
+    const { startDirectCall } = useVoiceContext();
+    const { setActiveServerId, setActiveChannelId, setCurrentView, channelsByServer, setChannelsByServer } = useAppContext();
     const [activeTab, setActiveTab] = useState('En ligne');
     const [addInput, setAddInput] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
@@ -109,7 +113,24 @@ const FriendsView = ({ onStartCall }) => {
 
     // --- Handlers ---
     const handleSendMessage = (friend) => {
-        showToast(`Conversation ouverte avec ${friend.name}`, 'success');
+        const homeChannels = channelsByServer['home'] || [];
+        const isAlreadyInDMs = homeChannels.some(cat => cat.channels.some(ch => ch.id === `dm_${friend.id}`));
+
+        if (!isAlreadyInDMs) {
+            // We need to add them to a "Messages Privés" category
+            const newCategories = [...homeChannels];
+            let dmCategory = newCategories.find(c => c.category === 'Messages Privés');
+            if (!dmCategory) {
+                dmCategory = { category: 'Messages Privés', channels: [] };
+                newCategories.push(dmCategory);
+            }
+            dmCategory.channels.push({ id: `dm_${friend.id}`, name: friend.name, type: 'dm', avatar: friend.avatar });
+            setChannelsByServer({ ...channelsByServer, 'home': newCategories });
+        }
+
+        setActiveServerId('home');
+        setActiveChannelId(`dm_${friend.id}`);
+        setCurrentView('chat');
     };
 
     const handleOpenContextMenu = (e, friendId) => {
@@ -573,11 +594,7 @@ const FriendsView = ({ onStartCall }) => {
                                     icon={<Volume2 size={16} color="var(--text-muted)" />}
                                     label="Appeler"
                                     onClick={() => {
-                                        if (onStartCall) {
-                                            onStartCall(contextMenu.friendId);
-                                        } else {
-                                            showToast('Appel vocal lancé !', 'success');
-                                        }
+                                        startDirectCall(contextMenu.friendId);
                                         setContextMenu(null);
                                     }}
                                 />

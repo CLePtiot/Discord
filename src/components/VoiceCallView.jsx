@@ -1,26 +1,31 @@
 import React, { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, Maximize2 } from 'lucide-react';
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor } from 'lucide-react';
+import { useAppContext } from '../contexts/AppContext';
+import { useVoiceContext } from '../contexts/VoiceContext';
 
-const VoiceCallView = ({
-    activeVoiceChannelId,
-    displayStreamRef,
-    isScreenSharing,
-    userProfile,
-    isMuted,
-    isDeafened,
-    isSpeaking,
-    onToggleMute,
-    onToggleDeafen,
-    onToggleScreenShare,
-    onDisconnect
-}) => {
-    // Callback ref: called when the <video> element mounts in the DOM
+const VoiceCallView = () => {
+    const { userProfile } = useAppContext();
+    const {
+        activeVoiceChannelId,
+        displayStreamRef,
+        isScreenSharing,
+        isMuted,
+        isDeafened,
+        isSpeaking,
+        toggleMute,
+        toggleDeafen,
+        toggleScreenShare,
+        handleVoiceDisconnect
+    } = useVoiceContext();
+
     const videoCallbackRef = useCallback((videoEl) => {
         if (videoEl && displayStreamRef.current) {
             videoEl.srcObject = displayStreamRef.current;
         }
     }, [displayStreamRef]);
+
+    if (!activeVoiceChannelId) return null;
 
     return (
         <div className="call-view-container">
@@ -74,21 +79,21 @@ const VoiceCallView = ({
             <div className="floating-call-toolbar">
                 <button
                     className={`toolbar-btn ${isMuted ? 'btn-danger' : 'btn-normal'}`}
-                    onClick={onToggleMute}
+                    onClick={toggleMute}
                     title={isMuted ? 'Réactiver le micro' : 'Couper le micro'}
                 >
                     {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
                 </button>
                 <button
                     className={`toolbar-btn ${isDeafened ? 'btn-danger' : 'btn-normal'}`}
-                    onClick={onToggleDeafen}
+                    onClick={toggleDeafen}
                     title={isDeafened ? 'Réactiver le son' : 'Couper le son'}
                 >
                     {isDeafened ? <HeadphoneOff size={24} /> : <Headphones size={24} />}
                 </button>
                 <button
                     className={`toolbar-btn ${isScreenSharing ? 'btn-active' : 'btn-normal'}`}
-                    onClick={onToggleScreenShare}
+                    onClick={toggleScreenShare}
                     title={isScreenSharing ? 'Arrêter le partage' : 'Partager l\'écran'}
                 >
                     <Monitor size={24} />
@@ -96,7 +101,7 @@ const VoiceCallView = ({
                 <div className="toolbar-separator"></div>
                 <button
                     className="toolbar-btn btn-danger btn-disconnect"
-                    onClick={onDisconnect}
+                    onClick={handleVoiceDisconnect}
                     title="Se déconnecter"
                 >
                     <PhoneOff size={24} />

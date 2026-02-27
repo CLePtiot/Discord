@@ -1,34 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor } from 'lucide-react';
+import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor, PlusCircle } from 'lucide-react';
 import { useToast } from './Toast';
+import { useAppContext } from '../contexts/AppContext';
+import { useVoiceContext } from '../contexts/VoiceContext';
+import CreateChannelModal from './CreateChannelModal';
 
-const ChannelSidebar = ({
-    serverName,
-    categories,
-    activeChannelIds = [],
-    activeVoiceChannelId,
-    onSelectChannel,
-    onJoinVoiceChannel,
-    onFriendsClick,
-    isFriendsViewActive,
-    userProfile,
-    onOpenSettings,
-    onOpenServerSettings,
-    isSpeaking,
-    setIsSpeaking,
-    isMuted,
-    isDeafened,
-    isScreenSharing,
-    mediaStreamRef,
-    handleVoiceDisconnect,
-    toggleMute,
-    toggleDeafen,
-    toggleScreenShare
-}) => {
+const ChannelSidebar = () => {
+    const {
+        activeServer, serverChannels, activeChannelId, setActiveChannelId,
+        currentView, setCurrentView, setIsMobileMenuOpen,
+        userProfile, setIsSettingsOpen, setIsServerSettingsOpen,
+        channelsByServer, setChannelsByServer, activeServerId
+    } = useAppContext();
+
+    const {
+        activeVoiceChannelId, setActiveVoiceChannelId, isSpeaking, setIsSpeaking,
+        isMuted, isDeafened, isScreenSharing, mediaStreamRef, handleVoiceDisconnect,
+        toggleMute, toggleDeafen, toggleScreenShare
+    } = useVoiceContext();
+
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
     const animationFrameRef = useRef(null);
     const { showToast } = useToast();
+
+    const serverName = activeServer?.name || 'Unknown';
+    const categories = serverChannels || [];
+    const isFriendsViewActive = currentView === 'friends';
+    const [createChannelModal, setCreateChannelModal] = useState({ isOpen: false, categoryName: '' });
 
     // Find the active voice channel name
     const getActiveVoiceChannelName = () => {
@@ -89,11 +88,36 @@ const ChannelSidebar = ({
         };
     }, [activeVoiceChannelId, setIsSpeaking, mediaStreamRef]);
 
-    // The voice connection handlers are passed via props now
+    const handleCreateChannel = (channelName, channelType) => {
+        const { categoryName } = createChannelModal;
+
+        // Find the category and add the new channel
+        const updatedCategories = categories.map(cat => {
+            if (cat.category === categoryName) {
+                return {
+                    ...cat,
+                    channels: [
+                        ...cat.channels,
+                        { id: `c_${Date.now()}`, name: channelName, type: channelType }
+                    ]
+                };
+            }
+            return cat;
+        });
+
+        // Update global context
+        setChannelsByServer({
+            ...channelsByServer,
+            [activeServerId]: updatedCategories
+        });
+
+        setCreateChannelModal({ isOpen: false, categoryName: '' });
+        showToast(`Salon ${channelName} créé`, 'success');
+    };
 
     return (
         <div className="channel-sidebar glass-panel">
-            <div className="channel-header" onClick={onOpenServerSettings}>
+            <div className="channel-header" onClick={() => setIsServerSettingsOpen(true)}>
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{serverName}</span>
                 <ChevronDown size={18} />
             </div>
@@ -101,7 +125,10 @@ const ChannelSidebar = ({
             <div className="channel-list">
                 <div
                     className={`channel-item ${isFriendsViewActive ? 'active' : ''}`}
-                    onClick={onFriendsClick}
+                    onClick={() => {
+                        setCurrentView('friends');
+                        setIsMobileMenuOpen(false);
+                    }}
                     style={{ marginBottom: '16px' }}
                 >
                     <Users size={18} />
@@ -116,14 +143,27 @@ const ChannelSidebar = ({
 
                 {categories.map((category, catIdx) => (
                     <React.Fragment key={catIdx}>
-                        <div className="category" style={{ marginTop: catIdx > 0 ? '16px' : '0' }}>
-                            <ChevronDown size={12} />
-                            {category.category}
+                        <div className="category" style={{ marginTop: catIdx > 0 ? '16px' : '0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <ChevronDown size={12} />
+                                {category.category}
+                            </div>
+                            {/* NEW: Plus button to create channels (not fully wired yet but UI is present as requested in audit) */}
+                            <PlusCircle
+                                size={14}
+                                cursor="pointer"
+                                title="Créer un salon"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCreateChannelModal({ isOpen: true, categoryName: category.category });
+                                }}
+                                className="add-channel-btn"
+                            />
                         </div>
 
                         {category.channels.map(channel => {
                             const isText = channel.type === 'text';
-                            const isActiveText = isText && activeChannelIds.includes(channel.id);
+                            const isActiveText = isText && activeChannelId === channel.id;
                             const isActiveVoice = !isText && channel.id === activeVoiceChannelId;
                             const Icon = isText ? Hash : Volume2;
 
@@ -131,7 +171,10 @@ const ChannelSidebar = ({
                                 <React.Fragment key={channel.id}>
                                     <div
                                         className={`channel-item ${isActiveText || isActiveVoice ? 'active' : ''}`}
-                                        onClick={() => isText ? onSelectChannel(channel.id) : onJoinVoiceChannel(channel.id)}
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            isText ? setActiveChannelId(channel.id) : setActiveVoiceChannelId(channel.id);
+                                        }}
                                     >
                                         <Icon size={18} />
                                         <span>{channel.name}</span>
@@ -158,12 +201,11 @@ const ChannelSidebar = ({
                 ))}
             </div>
 
-            {/* === Voice Connection Panel (like Discord) === */}
+            {/* === Voice Connection Panel === */}
             {activeVoiceChannelId && (
                 <div className="voice-connection-panel">
                     <div className="voice-connection-header">
                         <div className="voice-connection-info">
-                            {/* Connection Quality Bars */}
                             <div className="voice-quality-bars">
                                 <div className="voice-quality-bar" style={{ height: '6px' }}></div>
                                 <div className="voice-quality-bar" style={{ height: '10px' }}></div>
@@ -225,9 +267,16 @@ const ChannelSidebar = ({
                     <button className="control-btn" onClick={activeVoiceChannelId ? toggleDeafen : () => showToast("Rejoignez un salon vocal d'abord", "info")} style={isDeafened && activeVoiceChannelId ? { color: '#da373c' } : {}} title={isDeafened ? 'Réactiver le son' : 'Couper le son'}>
                         {isDeafened && activeVoiceChannelId ? <HeadphoneOff size={18} /> : <Headphones size={18} />}
                     </button>
-                    <button className="control-btn" onClick={onOpenSettings} title="Paramètres Utilisateur"><Settings size={18} /></button>
+                    <button className="control-btn" onClick={() => setIsSettingsOpen(true)} title="Paramètres Utilisateur"><Settings size={18} /></button>
                 </div>
             </div>
+
+            <CreateChannelModal
+                isOpen={createChannelModal.isOpen}
+                onClose={() => setCreateChannelModal({ isOpen: false, categoryName: '' })}
+                onCreate={handleCreateChannel}
+                categoryName={createChannelModal.categoryName}
+            />
         </div>
     );
 };

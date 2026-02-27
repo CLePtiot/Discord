@@ -140,6 +140,19 @@ export default function useSupabaseMessages(channelId, serverId) {
                     setMessages(prev => prev.filter(m => m.id !== deletedId));
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `channel_id=eq.${channelId}`,
+                },
+                (payload) => {
+                    const row = payload.new;
+                    setMessages(prev => prev.map(m => m.id === row.id ? { ...m, content: row.content, _isEdited: true } : m));
+                }
+            )
             .subscribe();
 
         channelRef.current = realtimeChannel;
@@ -232,7 +245,21 @@ export default function useSupabaseMessages(channelId, serverId) {
         }
     }, []);
 
-    return { messages, setMessages, sendMessage, deleteMessage, loading };
+    // ── Update message ──
+    const updateMessage = useCallback(async (messageId, newContent) => {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent, _isEdited: true } : m));
+
+        if (!supabase) return;
+
+        const { error } = await supabase
+            .from('messages')
+            .update({ content: newContent })
+            .eq('id', messageId);
+
+        if (error) console.error('Erreur modification message:', error);
+    }, []);
+
+    return { messages, setMessages, sendMessage, deleteMessage, updateMessage, loading };
 }
 
 // ── Helper ──

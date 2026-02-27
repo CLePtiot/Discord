@@ -146,6 +146,10 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
         showToast('Ordre des salons sauvegardé', 'success');
     };
 
+    const handleSaveRoles = () => {
+        showToast('Rôles mis à jour', 'success');
+    };
+
     // --- Components ---
     const renderSidebar = () => (
         <div className="settings-sidebar">
@@ -174,6 +178,20 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                 Salons
             </div>
 
+            <div className="settings-divider"></div>
+            <div
+                className="settings-tab"
+                style={{ color: '#da373c' }}
+                onClick={() => {
+                    if (window.confirm("Êtes-vous sûr de vouloir quitter ce serveur ?")) {
+                        showToast("Vous avez quitté le serveur", "info");
+                        onClose();
+                    }
+                }}
+            >
+                Quitter le serveur
+            </div>
+
             <div className="settings-divider" style={{ marginTop: 'auto' }}></div>
             <button className="settings-logout" onClick={onClose}>
                 Fermer
@@ -183,6 +201,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
     const renderOverview = () => (
         <motion.div
+            key="overview"
             className="settings-content-inner"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -225,6 +244,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
     const renderRoles = () => (
         <motion.div
+            key="roles"
             className="settings-content-inner" style={{ display: 'flex', gap: '24px', height: '100%' }}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
         >
@@ -372,6 +392,12 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                                 isDanger
                             />
                         </div>
+
+                        <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                            <button className="action-button success" onClick={handleSaveRoles}>
+                                Enregistrer les modifications
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
@@ -384,6 +410,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
     const renderChannels = () => (
         <motion.div
+            key="channels"
             className="settings-content-inner"
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
         >

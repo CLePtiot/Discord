@@ -1,7 +1,30 @@
 import React from 'react';
 import { Compass, Plus } from 'lucide-react';
+import { useAppContext } from '../contexts/AppContext';
 
-const ServerSidebar = ({ servers, activeServerId, onSelectServer, onAddServerClick, onExploreClick }) => {
+const ServerSidebar = () => {
+    const {
+        servers,
+        activeServerId,
+        setActiveServerId,
+        setIsServerModalOpen,
+        setIsExploreModalOpen,
+        setCurrentView,
+        channelsByServer,
+        setActiveChannelId
+    } = useAppContext();
+
+    const onSelectServer = (id) => {
+        setActiveServerId(id);
+        setCurrentView('chat');
+        const firstCategory = channelsByServer[id]?.[0];
+        if (firstCategory && firstCategory.channels.length > 0 && firstCategory.channels[0].type === 'text') {
+            setActiveChannelId(firstCategory.channels[0].id);
+        } else {
+            setActiveChannelId(null);
+        }
+    };
+
     return (
         <div className="server-sidebar glass-panel">
             {servers.map((server, index) => {
@@ -33,8 +56,8 @@ const ServerSidebar = ({ servers, activeServerId, onSelectServer, onAddServerCli
             <div
                 className="server-icon"
                 style={{ backgroundColor: 'transparent', border: '1px dashed var(--text-muted)', cursor: 'pointer' }}
-                title="Add a Server"
-                onClick={onAddServerClick}
+                title="Ajouter un serveur"
+                onClick={() => setIsServerModalOpen(true)}
             >
                 <Plus size={24} color="var(--text-normal)" />
             </div>
@@ -43,8 +66,8 @@ const ServerSidebar = ({ servers, activeServerId, onSelectServer, onAddServerCli
             <div
                 className="server-icon"
                 style={{ backgroundColor: 'transparent', cursor: 'pointer' }}
-                title="Explore Discoverable Servers"
-                onClick={onExploreClick}
+                title="Explorer les serveurs publics"
+                onClick={() => setIsExploreModalOpen(true)}
             >
                 <Compass size={24} color="var(--text-normal)" />
             </div>

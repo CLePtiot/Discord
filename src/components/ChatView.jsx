@@ -1,27 +1,39 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Gift, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download } from 'lucide-react';
+import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Gift, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download, Pencil, MessageSquare, CornerDownRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_CHANNEL_NAMES } from '../mockData';
 import { useToast } from './Toast';
 import useSupabaseMessages from '../hooks/useSupabaseMessages';
 import MessageSkeleton from './MessageSkeleton';
+import { useAppContext } from '../contexts/AppContext';
 
 const ChatView = ({
-    activeChannelId,
-    activeServerId,
-    onBanUser,
-    onToggleMemberList,
-    onToggleMobileMenu,
-    userProfile,
-    appSoundsEnabled,
-    notificationsEnabled,
-    setNotificationsEnabled,
     playMessageSend,
-    playNotificationSound
+    playNotificationSound,
+    style
 }) => {
+    const {
+        activeChannelId,
+        activeServerId,
+        handleBanUser,
+        isMemberListOpen, setIsMemberListOpen,
+        setIsMobileMenuOpen,
+        userProfile,
+        preferences,
+        mutedServers,
+        setMutedServers
+    } = useAppContext();
+
+    const onBanUser = handleBanUser;
+    const appSoundsEnabled = preferences.appSounds !== false;
+    const onToggleMemberList = () => setIsMemberListOpen(!isMemberListOpen);
+    const onToggleMobileMenu = () => setIsMobileMenuOpen(true);
     // ── Supabase Realtime: each ChatView instance gets its own subscription ──
-    const { messages, sendMessage, deleteMessage, loading } = useSupabaseMessages(activeChannelId, activeServerId);
+    const { messages, sendMessage, deleteMessage, updateMessage, loading } = useSupabaseMessages(activeChannelId, activeServerId);
     const [inputValue, setInputValue] = useState('');
+    const [replyingToMessage, setReplyingToMessage] = useState(null);
+    const [editingMessageId, setEditingMessageId] = useState(null);
+    const [editInputValue, setEditInputValue] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
@@ -50,8 +62,8 @@ const ChatView = ({
             if (messages.length > prevMessageCount.current) {
                 const lastMsg = messages[messages.length - 1];
                 // Play notification if the message is from someone else, we are not muted, and it's not an optimistic local insert.
-                // Depending on app logic, userProfile.name might not match exactly, so check auth id if possible, here using name.
-                if (lastMsg.author !== userProfile.name && notificationsEnabled && !lastMsg._optimistic) {
+                const isServerMuted = activeServerId && mutedServers[activeServerId];
+                if (lastMsg.author !== userProfile.name && !isServerMuted && !lastMsg._optimistic) {
                     if (playNotificationSound) playNotificationSound();
                 }
             }
@@ -59,7 +71,7 @@ const ChatView = ({
         }
         prevLoadingRef.current = loading;
         prevMessageCount.current = messages.length;
-    }, [messages, loading, notificationsEnabled, userProfile.name, playNotificationSound]);
+    }, [messages, loading, mutedServers, activeServerId, userProfile.name, playNotificationSound]);
 
     // Close context menu on outside click
     useEffect(() => {
@@ -91,13 +103,52 @@ const ChatView = ({
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && (inputValue.trim() || selectedImage)) {
-            sendMessage(inputValue, selectedImage, userProfile);
+            let finalContent = inputValue;
+            if (replyingToMessage) {
+                // Remove Markdown bold for the stored format to avoid parsing issues later, keep it simple.
+                const truncated = replyingToMessage.content.substring(0, 50).replace(/\n/g, ' ');
+                finalContent = `> @${replyingToMessage.author} : _${truncated}${replyingToMessage.content.length > 50 ? '...' : ''}_\n\n${inputValue}`;
+            }
+
+            sendMessage(finalContent, selectedImage, userProfile);
             setInputValue('');
             setSelectedImage(null);
+            setReplyingToMessage(null);
             if (fileInputRef.current) fileInputRef.current.value = '';
             // Play send sound
             if (playMessageSend) playMessageSend();
         }
+    };
+
+    const handleEditKeyDown = (e, msgId) => {
+        if (e.key === 'Enter' && editInputValue.trim()) {
+            updateMessage(msgId, editInputValue);
+            setEditingMessageId(null);
+            setEditInputValue('');
+        } else if (e.key === 'Escape') {
+            setEditingMessageId(null);
+            setEditInputValue('');
+        }
+    };
+
+    const renderMessageContent = (msg) => {
+        if (msg.content && msg.content.startsWith('> @')) {
+            const parts = msg.content.split('\n\n');
+            if (parts.length >= 2) {
+                const quote = parts[0].substring(2); // remove "> "
+                const actualMsg = parts.slice(1).join('\n\n');
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div className="message-reply-preview" style={{ borderLeft: '3px solid var(--text-muted)', paddingLeft: '8px', opacity: 0.7, fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CornerDownRight size={14} color="var(--accent-color)" />
+                            <span>{quote}</span>
+                        </div>
+                        <div>{actualMsg}</div>
+                    </div>
+                );
+            }
+        }
+        return <div>{msg.content}</div>;
     };
 
     const handleDragOver = (e) => {
@@ -121,9 +172,16 @@ const ChatView = ({
     };
 
     const handleMuteToggle = () => {
-        const newEnabledState = !notificationsEnabled;
-        setNotificationsEnabled(newEnabledState);
-        showToast(newEnabledState ? 'Notifications activées pour ce salon' : 'Notifications désactivées pour ce salon', newEnabledState ? 'success' : 'info');
+        if (!activeServerId) return;
+        const isServerMuted = mutedServers[activeServerId];
+        const newMutedState = !isServerMuted;
+
+        setMutedServers({
+            ...mutedServers,
+            [activeServerId]: newMutedState
+        });
+
+        showToast(!newMutedState ? 'Notifications activées pour ce serveur' : 'Notifications désactivées pour ce serveur', !newMutedState ? 'success' : 'info');
     };
 
     const handleSendCookie = () => {
@@ -206,7 +264,7 @@ const ChatView = ({
                 <div style={{ flex: 1 }}></div>
 
                 <div style={{ display: 'flex', gap: '16px', color: 'var(--text-muted)' }}>
-                    {!notificationsEnabled ? (
+                    {mutedServers[activeServerId] ? (
                         <BellOff size={20} cursor="pointer" color="var(--danger-color)" onClick={handleMuteToggle} title="Réactiver les notifications" />
                     ) : (
                         <Bell size={20} cursor="pointer" onClick={handleMuteToggle} title="Mettre en sourdine" />
@@ -288,7 +346,21 @@ const ChatView = ({
                                         <span className="message-time">{msg.timestamp}</span>
                                     </div>
                                     <div className="message-content">
-                                        {msg.content && <div style={{ marginBottom: msg.image ? '8px' : '0' }}>{msg.content}</div>}
+                                        {editingMessageId === msg.id ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '6px' }}>
+                                                <input
+                                                    type="text"
+                                                    value={editInputValue}
+                                                    onChange={e => setEditInputValue(e.target.value)}
+                                                    onKeyDown={e => handleEditKeyDown(e, msg.id)}
+                                                    style={{ background: 'var(--bg-active)', border: 'none', color: 'var(--text-normal)', padding: '8px 12px', borderRadius: '4px', outline: 'none' }}
+                                                    autoFocus
+                                                />
+                                                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Échap pour annuler, Entrée pour sauvegarder</span>
+                                            </div>
+                                        ) : (
+                                            msg.content && <div style={{ marginBottom: msg.image ? '8px' : '0' }}>{renderMessageContent(msg)}</div>
+                                        )}
                                         {msg.image && (
                                             <img
                                                 src={msg.image}
@@ -309,6 +381,25 @@ const ChatView = ({
                                         )}
                                     </div>
                                 </div>
+                                {/* Message Contextual Actions */}
+                                <div className="message-actions" style={{
+                                    position: 'absolute', top: '-12px', right: '16px', display: 'flex', background: 'var(--bg-secondary)',
+                                    border: '1px solid var(--bg-modifier-accent)', borderRadius: '4px', padding: '2px', opacity: 0, transition: 'opacity 0.2s'
+                                }}>
+                                    {(msg.author === userProfile.name || userProfile.role === 'admin') && (
+                                        <>
+                                            <button className="msg-action-btn" onClick={() => { setEditingMessageId(msg.id); setEditInputValue(msg.content.replace(/^> @.*\n\n/, '')); }} title="Modifier">
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button className="msg-action-btn" onClick={() => deleteMessage(msg.id, userProfile)} style={{ color: 'var(--danger-color)' }} title="Supprimer">
+                                                <Trash size={16} />
+                                            </button>
+                                        </>
+                                    )}
+                                    <button className="msg-action-btn" onClick={() => { setReplyingToMessage(msg); document.querySelector('.chat-input').focus(); }} title="Répondre">
+                                        <MessageSquare size={16} />
+                                    </button>
+                                </div>
                             </motion.div>
                         )) : (
                             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -324,12 +415,32 @@ const ChatView = ({
                 )}
             </div>
 
-            <div className="chat-input-area">
+            <div className="chat-input-area" style={{ position: 'relative' }}>
+                <AnimatePresence>
+                    {replyingToMessage && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: 10, height: 0 }}
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                background: 'var(--bg-active)', padding: '8px 16px', borderTopLeftRadius: '8px', borderTopRightRadius: '8px',
+                                borderBottom: '1px solid var(--bg-modifier-accent)', color: 'var(--text-muted)', fontSize: '13px'
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <CornerDownRight size={14} color="var(--text-muted)" />
+                                <span>Réponse à <span style={{ color: 'var(--text-normal)', fontWeight: 600 }}>@{replyingToMessage.author}</span></span>
+                            </div>
+                            <button onClick={() => setReplyingToMessage(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={14} /></button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 {selectedImage && (
                     <div style={{
                         padding: '12px',
                         backgroundColor: 'var(--bg-active)',
-                        borderRadius: '8px 8px 0 0',
+                        borderRadius: replyingToMessage ? '0' : '8px 8px 0 0',
                         display: 'flex',
                         gap: '12px',
                         alignItems: 'center',
@@ -359,7 +470,7 @@ const ChatView = ({
                         </button>
                     </div>
                 )}
-                <div className="chat-input-wrapper" style={{ borderRadius: selectedImage ? '0 0 8px 8px' : 'var(--radius-md)' }}>
+                <div className="chat-input-wrapper" style={{ borderRadius: (selectedImage || replyingToMessage) ? '0 0 8px 8px' : 'var(--radius-md)' }}>
                     <PlusCircle
                         size={24}
                         color="var(--text-muted)"
@@ -405,14 +516,16 @@ const ChatView = ({
                         boxShadow: '0 8px 16px rgba(0,0,0,0.5)'
                     }}
                 >
-                    <div className="context-menu-item danger" onClick={(e) => {
-                        e.stopPropagation();
-                        deleteMessage(contextMenu.messageId, userProfile);
-                        setContextMenu(null);
-                    }}>
-                        <span>Supprimer le message</span>
-                        <Trash size={16} />
-                    </div>
+                    {(contextMenu.author === userProfile.name || userProfile.role === 'admin') && (
+                        <div className="context-menu-item danger" onClick={(e) => {
+                            e.stopPropagation();
+                            deleteMessage(contextMenu.messageId, userProfile);
+                            setContextMenu(null);
+                        }}>
+                            <span>Supprimer le message</span>
+                            <Trash size={16} />
+                        </div>
+                    )}
                     <div className="context-menu-item danger" onClick={(e) => {
                         e.stopPropagation();
                         if (onBanUser) onBanUser(contextMenu.author);
