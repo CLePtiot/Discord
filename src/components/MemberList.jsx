@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Crown, Ban } from 'lucide-react';
+import { Crown, Ban, Shield, Star, Zap, Sword, Award } from 'lucide-react';
 import { MOCK_MEMBERS } from '../mockData';
 import UserPopoutCard from './UserPopoutCard';
 
-const MemberList = ({ members = [], onBanUser, userProfile }) => {
+const roleBadges = {
+    'shield': Shield,
+    'crown': Crown,
+    'star': Star,
+    'zap': Zap,
+    'sword': Sword,
+    'award': Award
+};
+
+const MemberList = ({ members = [], roles = [], onBanUser, userProfile }) => {
     const [contextMenu, setContextMenu] = useState(null);
 
     // Close context menu on outside click
@@ -17,12 +26,21 @@ const MemberList = ({ members = [], onBanUser, userProfile }) => {
     const [popoutPos, setPopoutPos] = useState({ top: 0, left: 0 });
     // Use passed members instead of MOCK_MEMBERS directly
     const groupedMembers = members.reduce((acc, member) => {
-        if (!acc[member.group]) acc[member.group] = [];
-        acc[member.group].push(member);
+        // Fallback: If no custom assignment, rely on the original mock string logic. 
+        // We simulate that the user's role names match the member group.
+        let groupName = member.group;
+        if (member.name === 'Satoshi (Moi)' && roles.length > 0) {
+            groupName = roles[0].name; // Auto-assign me to the highest custom role!
+        }
+        if (!acc[groupName]) acc[groupName] = [];
+        acc[groupName].push(member);
         return acc;
     }, {});
 
-    const groupOrder = ['Admin', 'Modérateur', 'En ligne', 'Hors ligne'];
+    // For groupOrder, use custom roles first, then fallbacks.
+    const customRoleNames = roles.map(r => r.name);
+    const fallbacks = ['En ligne', 'Hors ligne'];
+    const groupOrder = [...customRoleNames, ...fallbacks.filter(f => !customRoleNames.includes(f))];
 
     const handleUserClick = (e, member) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -40,12 +58,18 @@ const MemberList = ({ members = [], onBanUser, userProfile }) => {
     return (
         <div className="member-list-sidebar glass-panel" style={{ borderRight: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.05)' }}>
             {groupOrder.map(groupName => {
-                const membersInGroup = groupedMembers[groupName];
-                if (!membersInGroup || membersInGroup.length === 0) return null;
+                const membersInGroup = groupedMembers[groupName] || [];
+                const roleDef = roles.find(r => r.name === groupName);
+
+                // Show role even if 0 members if it's a custom role, to let user see it!
+                if (!roleDef && membersInGroup.length === 0) return null;
+
+                const roleColor = roleDef?.color || 'inherit';
+                const BadgeIcon = roleDef?.badge ? roleBadges[roleDef.badge] : null;
 
                 return (
                     <div className="role-group" key={groupName}>
-                        <div className="role-title">{groupName} — {membersInGroup.length}</div>
+                        <div className="role-title" style={{ color: roleColor }}>{groupName} — {membersInGroup.length}</div>
 
                         {membersInGroup.map(member => {
                             const avatar = member.name === 'Satoshi (Moi)' && userProfile ? userProfile.avatar : member.avatar;
@@ -100,15 +124,14 @@ const MemberList = ({ members = [], onBanUser, userProfile }) => {
                                     <span
                                         className="member-name"
                                         style={{
-                                            color: groupName === 'Admin' ? 'var(--danger-color)' :
-                                                groupName === 'Modérateur' ? 'var(--success-color)' : 'inherit',
+                                            color: roleColor,
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '6px'
                                         }}
                                     >
                                         {member.name}
-                                        {groupName === 'Admin' && <Crown size={14} color="var(--accent-color)" />}
+                                        {BadgeIcon && <BadgeIcon size={14} color={roleColor} />}
                                     </span>
                                 </div>
                             );

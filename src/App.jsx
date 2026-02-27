@@ -115,7 +115,15 @@ function App() {
 
         {/* Colonne 4 : Liste des Membres */}
         {isMemberListOpen && (
-          <MemberList members={members} onBanUser={handleBanUser} userProfile={userProfile} />
+          <MemberList
+            members={members}
+            roles={rolesByServer[activeServerId] || [
+              { id: 'r1', name: 'Administrateur', color: '#da373c', badge: 'crown' },
+              { id: 'r2', name: 'Membre', color: '#949ba4', badge: null }
+            ]}
+            onBanUser={handleBanUser}
+            userProfile={userProfile}
+          />
         )}
 
         {/* Modals with Lazy Loading */}
