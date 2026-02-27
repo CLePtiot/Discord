@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Gift, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download, Pencil, MessageSquare, CornerDownRight } from 'lucide-react';
+import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download, Pencil, MessageSquare, CornerDownRight } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_CHANNEL_NAMES } from '../mockData';
 import { useToast } from './Toast';
@@ -38,6 +39,8 @@ const ChatView = ({
     const [contextMenu, setContextMenu] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const emojiPickerRef = useRef(null);
 
     // ── Lightbox state ──
     const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -73,11 +76,16 @@ const ChatView = ({
         prevMessageCount.current = messages.length;
     }, [messages, loading, mutedServers, activeServerId, userProfile.name, playNotificationSound]);
 
-    // Close context menu on outside click
+    // Close context menu and emoji picker on outside click
     useEffect(() => {
-        const handleClickOutside = () => setContextMenu(null);
-        window.addEventListener('click', handleClickOutside);
-        return () => window.removeEventListener('click', handleClickOutside);
+        const handleClickOutside = (e) => {
+            setContextMenu(null);
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target) && !e.target.closest('.emoji-toggle-btn')) {
+                setShowEmojiPicker(false);
+            }
+        };
+        window.addEventListener('mousedown', handleClickOutside);
+        return () => window.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     // ── Lightbox keyboard close ──
@@ -190,10 +198,9 @@ const ChatView = ({
         if (playMessageSend) playMessageSend();
     };
 
-    const handleAddEmoji = () => {
-        const emojis = ['😂', '😎', '🔥', '🎉', '💡', '🚀', '❤️', '🤔'];
-        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-        setInputValue(prev => prev + randomEmoji);
+    const onEmojiClick = (emojiObject) => {
+        setInputValue(prevInput => prevInput + emojiObject.emoji);
+        document.querySelector('.chat-input')?.focus();
     };
 
     const handleDownloadImage = useCallback((src) => {
@@ -493,9 +500,47 @@ const ChatView = ({
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyDown}
                     />
-                    <Gift size={24} color="var(--text-muted)" cursor="pointer" title="Envoyer un cookie 🍪" onClick={handleSendCookie} />
                     <ImageIcon size={24} color="var(--text-muted)" cursor="pointer" title="Joindre une image" onClick={() => fileInputRef.current?.click()} />
-                    <Smile size={24} color="var(--text-muted)" cursor="pointer" title="Emoji aléatoire" onClick={handleAddEmoji} />
+                    <div style={{ position: 'relative' }}>
+                        <Smile
+                            size={24}
+                            color={showEmojiPicker ? "var(--accent-color)" : "var(--text-muted)"}
+                            cursor="pointer"
+                            title="Choisir un emoji"
+                            className="emoji-toggle-btn"
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        />
+                        <AnimatePresence>
+                            {showEmojiPicker && (
+                                <motion.div
+                                    ref={emojiPickerRef}
+                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                    transition={{ duration: 0.2 }}
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 'calc(100% + 16px)',
+                                        right: 0,
+                                        zIndex: 1000,
+                                        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                                        borderRadius: '8px',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    <EmojiPicker
+                                        onEmojiClick={onEmojiClick}
+                                        theme="dark"
+                                        lazyLoadEmojis={true}
+                                        searchDisabled={false}
+                                        skinTonesDisabled={true}
+                                        width={320}
+                                        height={400}
+                                    />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
 

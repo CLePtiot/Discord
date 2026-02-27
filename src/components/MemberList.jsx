@@ -13,7 +13,7 @@ const roleBadges = {
     'award': Award
 };
 
-const MemberList = ({ members = [], roles = [], onBanUser, userProfile }) => {
+const MemberList = ({ members = [], roles = [], memberRoles = {}, onBanUser, userProfile }) => {
     const [contextMenu, setContextMenu] = useState(null);
 
     // Close context menu on outside click
@@ -24,13 +24,23 @@ const MemberList = ({ members = [], roles = [], onBanUser, userProfile }) => {
     }, []);
     const [selectedUser, setSelectedUser] = useState(null);
     const [popoutPos, setPopoutPos] = useState({ top: 0, left: 0 });
-    // Use passed members instead of MOCK_MEMBERS directly
+
+    // Group members by their highest assigned role, or fallback to status
     const groupedMembers = members.reduce((acc, member) => {
-        // Fallback: If no custom assignment, rely on the original mock string logic. 
-        // We simulate that the user's role names match the member group.
-        let groupName = member.group;
-        if (member.name === 'Satoshi (Moi)' && roles.length > 0) {
-            groupName = roles[0].name; // Auto-assign me to the highest custom role!
+        const assignedRoleIds = memberRoles[member.id] || [];
+        // Find the highest role (earliest in the roles array) that they have
+        let groupName = null;
+        if (assignedRoleIds.length > 0) {
+            for (const role of roles) {
+                if (assignedRoleIds.includes(role.id)) {
+                    groupName = role.name;
+                    break; // Take the highest (first) matching role
+                }
+            }
+        }
+        // Fallback: use status-based grouping
+        if (!groupName) {
+            groupName = (member.status === 'offline' || member.status === 'Hors ligne') ? 'Hors ligne' : 'En ligne';
         }
         if (!acc[groupName]) acc[groupName] = [];
         acc[groupName].push(member);

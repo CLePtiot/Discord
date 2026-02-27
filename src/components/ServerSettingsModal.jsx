@@ -15,7 +15,7 @@ const roleBadges = [
     { id: 'award', icon: Award, label: 'Trophée' }
 ];
 
-const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdateCategories, initialRoles, onUpdateRoles }) => {
+const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdateCategories, initialRoles, onUpdateRoles, members = [], memberRoles: initialMemberRoles = {}, onUpdateMemberRoles }) => {
     const [activeTab, setActiveTab] = useState('Vue d\'ensemble');
     const { showToast } = useToast();
 
@@ -26,6 +26,9 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
     const [roles, setRoles] = useState(initialRoles || []);
     const [selectedRoleId, setSelectedRoleId] = useState(initialRoles?.[0]?.id || 'r1');
     const selectedRole = roles.find(r => r.id === selectedRoleId);
+
+    // -- State for Member Role Assignments --
+    const [localMemberRoles, setLocalMemberRoles] = useState(initialMemberRoles || {});
 
     // -- State for Channels (Drag & Drop) --
     // We flatten the channels for simplified reordering in this demo
@@ -38,6 +41,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                 setRoles(initialRoles);
                 setSelectedRoleId(initialRoles[0].id);
             }
+            setLocalMemberRoles(initialMemberRoles || {});
             // Flatten categories down to just channels for easy reordering across the board
             const allChannels = [];
             categories?.forEach(cat => {
@@ -131,7 +135,23 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
         if (onUpdateRoles) {
             onUpdateRoles(roles);
         }
+        if (onUpdateMemberRoles) {
+            onUpdateMemberRoles(localMemberRoles);
+        }
         showToast('Rôles mis à jour', 'success');
+    };
+
+    const toggleMemberRole = (memberId, roleId) => {
+        setLocalMemberRoles(prev => {
+            const memberCurrentRoles = prev[memberId] || [];
+            const hasRole = memberCurrentRoles.includes(roleId);
+            return {
+                ...prev,
+                [memberId]: hasRole
+                    ? memberCurrentRoles.filter(id => id !== roleId)
+                    : [...memberCurrentRoles, roleId]
+            };
+        });
     };
 
     // --- Components ---
@@ -381,6 +401,60 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                             <button className="action-button success" onClick={handleSaveRoles}>
                                 Enregistrer les modifications
                             </button>
+                        </div>
+
+                        {/* Section: Assign Members */}
+                        <div className="role-card" style={{ marginTop: '8px' }}>
+                            <h3 className="role-section-title"><Users size={16} /> MEMBRES AVEC CE RÔLE</h3>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                                Activez ou désactivez les membres pour leur attribuer ce rôle.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {members.map(member => {
+                                    const memberCurrentRoles = localMemberRoles[member.id] || [];
+                                    const hasRole = memberCurrentRoles.includes(selectedRoleId);
+                                    return (
+                                        <div
+                                            key={member.id}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: '8px 12px', borderRadius: '6px',
+                                                background: hasRole ? 'rgba(35, 165, 89, 0.08)' : 'transparent',
+                                                border: '1px solid ' + (hasRole ? 'rgba(35, 165, 89, 0.2)' : 'rgba(255,255,255,0.04)'),
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '32px', height: '32px', borderRadius: '50%',
+                                                    backgroundImage: `url(${member.avatar})`, backgroundSize: 'cover',
+                                                    backgroundColor: '#555'
+                                                }} />
+                                                <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-header)' }}>
+                                                    {member.name}
+                                                </span>
+                                            </div>
+                                            <div
+                                                onClick={() => toggleMemberRole(member.id, selectedRoleId)}
+                                                style={{
+                                                    width: '40px', height: '24px', borderRadius: '12px',
+                                                    background: hasRole ? '#23a559' : '#80848e',
+                                                    position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+                                                }}
+                                            >
+                                                <div style={{
+                                                    position: 'absolute', top: '2px', left: hasRole ? '18px' : '2px',
+                                                    width: '20px', height: '20px', borderRadius: '50%',
+                                                    background: 'white', transition: 'left 0.2s',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                    {hasRole ? <Check size={12} color="#23a559" /> : <X size={12} color="#80848e" />}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 ) : (

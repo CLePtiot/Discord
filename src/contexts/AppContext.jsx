@@ -21,6 +21,7 @@ export const AppProvider = ({ children }) => {
     const [members, setMembers] = useLocalStorage('freedom-members', MOCK_MEMBERS);
     const [mutedServers, setMutedServers] = useLocalStorage('freedom-muted-servers', {});
     const [rolesByServer, setRolesByServer] = useLocalStorage('freedom-roles', {});
+    const [memberRolesByServer, setMemberRolesByServer] = useLocalStorage('freedom-member-roles', {});
 
     const [userProfile, setUserProfile] = useLocalStorage('freedom-profile', {
         name: 'Satoshi (Moi)',
@@ -112,6 +113,7 @@ export const AppProvider = ({ children }) => {
         handleBanUser,
         mutedServers, setMutedServers,
         rolesByServer, setRolesByServer,
+        memberRolesByServer, setMemberRolesByServer,
         userProfile, setUserProfile,
         preferences, setPreferences,
         handleLogout, handleCreateServer,

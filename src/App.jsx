@@ -31,7 +31,8 @@ function App() {
     preferences, userProfile, setUserProfile, setPreferences, handleLogout,
     handleCreateServer, activeServer, serverChannels,
     activeServerId, channelsByServer, setChannelsByServer, members, handleBanUser,
-    rolesByServer, setRolesByServer
+    rolesByServer, setRolesByServer,
+    memberRolesByServer, setMemberRolesByServer
   } = useAppContext();
 
   const { playMessageSend, playNotificationSound, playCommandOpen } = useSoundFeedback(preferences.appSounds !== false);
@@ -121,6 +122,7 @@ function App() {
               { id: 'r1', name: 'Administrateur', color: '#da373c', badge: 'crown' },
               { id: 'r2', name: 'Membre', color: '#949ba4', badge: null }
             ]}
+            memberRoles={memberRolesByServer[activeServerId] || {}}
             onBanUser={handleBanUser}
             userProfile={userProfile}
           />
@@ -168,6 +170,14 @@ function App() {
                 setRolesByServer({
                   ...rolesByServer,
                   [activeServerId]: newRoles
+                });
+              }}
+              members={members}
+              memberRoles={memberRolesByServer[activeServerId] || {}}
+              onUpdateMemberRoles={(newMemberRoles) => {
+                setMemberRolesByServer({
+                  ...memberRolesByServer,
+                  [activeServerId]: newMemberRoles
                 });
               }}
             />
