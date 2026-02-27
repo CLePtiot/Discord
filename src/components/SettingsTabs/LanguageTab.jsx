@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { useTranslation } from '../../contexts/LanguageContext';
 
 const languages = [
     { id: 'fr', label: 'Français', native: 'Français' },
@@ -18,6 +19,7 @@ const languages = [
 ];
 
 const LanguageTab = ({ preferences, setPreferences }) => {
+    const { t } = useTranslation();
     const currentLang = preferences?.language || 'fr';
 
     const handleSelect = (langId) => {
@@ -26,11 +28,11 @@ const LanguageTab = ({ preferences, setPreferences }) => {
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>Langue</h2>
+            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>{t('language.title')}</h2>
 
             <div style={{ marginBottom: '32px' }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>
-                    Sélectionne la langue de l'application. Project Freedom prend en charge les langues suivantes :
+                    {t('language.description')}
                 </p>
 
                 <div style={{
@@ -86,7 +88,7 @@ const LanguageTab = ({ preferences, setPreferences }) => {
                 </div>
 
                 <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '16px', fontStyle: 'italic' }}>
-                    Note : le changement de langue est enregistré dans tes préférences. L'interface reste en français pour cette démo.
+                    {t('language.note')}
                 </p>
             </div>
         </motion.div>

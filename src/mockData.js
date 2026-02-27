@@ -11,8 +11,8 @@ export const SERVERS = [
 export const CHANNELS_BY_SERVER = {
     'home': [],
     's1': [
-        { category: 'Information', channels: [{ id: 'c1', name: 'annonces', type: 'text' }, { id: 'c2', name: 'règlement', type: 'text' }] },
-        { category: 'Général', channels: [{ id: 'c3', name: 'général', type: 'text' }, { id: 'c4', name: 'idées', type: 'text' }] },
+        { category: 'Information', channels: [{ id: 'c1', name: 'annonces', type: 'announcement' }, { id: 'c2', name: 'règlement', type: 'text' }] },
+        { category: 'Général', channels: [{ id: 'c3', name: 'général', type: 'text' }, { id: 'c4', name: 'idées', type: 'forum' }] },
         { category: 'Vocal', channels: [{ id: 'cv1', name: 'Discussion', type: 'voice' }, { id: 'cv2', name: 'Réunion', type: 'voice' }] },
     ],
     's2': [

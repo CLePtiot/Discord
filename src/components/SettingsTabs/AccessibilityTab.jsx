@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Volume2 } from 'lucide-react';
+import { useTranslation } from '../../contexts/LanguageContext';
 
 const Toggle = ({ value, onChange }) => (
     <div className={`toggle-switch ${value ? 'on' : 'off'}`} onClick={() => onChange(!value)}>
@@ -9,6 +10,7 @@ const Toggle = ({ value, onChange }) => (
 );
 
 const AccessibilityTab = ({ preferences, setPreferences }) => {
+    const { t } = useTranslation();
     const [reducedMotion, setReducedMotion] = useState(false);
     const [highContrast, setHighContrast] = useState(false);
     const [largeText, setLargeText] = useState(false);
@@ -17,23 +19,23 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
 
     const settings = [
         {
-            label: 'Réduire les animations',
-            desc: 'Réduit les effets visuels et animations pour une expérience plus sobre.',
+            label: t('accessibility.reduce_motion'),
+            desc: t('accessibility.reduce_motion_desc'),
             value: reducedMotion, onChange: setReducedMotion
         },
         {
-            label: 'Mode contraste élevé',
-            desc: 'Augmente le contraste des éléments de l\'interface pour une meilleure lisibilité.',
+            label: t('accessibility.high_contrast'),
+            desc: t('accessibility.high_contrast_desc'),
             value: highContrast, onChange: setHighContrast
         },
         {
-            label: 'Texte agrandi',
-            desc: 'Augmente la taille de la police de base de l\'application.',
+            label: t('accessibility.large_text'),
+            desc: t('accessibility.large_text_desc'),
             value: largeText, onChange: setLargeText
         },
         {
-            label: 'Aperçu des liens',
-            desc: 'Affiche un aperçu visuel des liens partagés dans le chat.',
+            label: t('accessibility.link_preview'),
+            desc: t('accessibility.link_preview_desc'),
             value: linkPreview, onChange: setLinkPreview
         }
     ];
@@ -45,11 +47,11 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>Accessibilité</h2>
+            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>{t('accessibility.title')}</h2>
 
             <div style={{ marginBottom: '32px' }}>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
-                    Options d'affichage
+                    {t('accessibility.display_options')}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {settings.map((s, i) => (
@@ -70,7 +72,7 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
             {/* ── App Sounds Toggle ── */}
             <div style={{ marginTop: '8px', marginBottom: '8px' }}>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
-                    Audio
+                    {t('accessibility.audio')}
                 </h3>
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -79,10 +81,10 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
                     <div style={{ flex: 1, paddingRight: '16px' }}>
                         <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Volume2 size={16} color="var(--accent-color)" />
-                            Sons de l'app
+                            {t('accessibility.app_sounds')}
                         </div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                            Joue un son court lors de l'envoi de messages et de l'ouverture de la palette de commandes (Ctrl+K).
+                            {t('accessibility.app_sounds_desc')}
                         </div>
                     </div>
                     <Toggle value={appSoundsEnabled} onChange={handleToggleAppSounds} />
@@ -94,10 +96,10 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
             {/* Saturation slider */}
             <div>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
-                    Saturation des rôles
+                    {t('accessibility.role_saturation')}
                 </h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>
-                    Ajuste la saturation des couleurs de rôles dans les noms d'utilisateurs.
+                    {t('accessibility.role_saturation_desc')}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <input
@@ -132,10 +134,10 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
             {/* Font Size slider */}
             <div>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, margin: '24px 0 16px 0', textTransform: 'uppercase' }}>
-                    Taille de la police du chat
+                    {t('accessibility.font_size')}
                 </h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>
-                    Ajuste la taille du texte dans la zone de discussion principale pour un meilleur confort de lecture.
+                    {t('accessibility.font_size_desc')}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>A</span>
@@ -152,8 +154,8 @@ const AccessibilityTab = ({ preferences, setPreferences }) => {
                         {preferences?.fontSize ?? 16}px
                     </span>
                 </div>
-            </div>
-        </motion.div>
+            </div >
+        </motion.div >
     );
 };
 

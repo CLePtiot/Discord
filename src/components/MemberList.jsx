@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Crown, Ban, Shield, Star, Zap, Sword, Award } from 'lucide-react';
+import { Crown, Ban, Shield, Star, Zap, Sword, Award, Moon, CircleOff, Circle } from 'lucide-react';
 import { MOCK_MEMBERS } from '../mockData';
 import UserPopoutCard from './UserPopoutCard';
+import { useTranslation } from '../contexts/LanguageContext';
+import { useAppContext } from '../contexts/AppContext';
+import { Volume2, VolumeX, MicOff } from 'lucide-react';
 
 const roleBadges = {
     'shield': Shield,
@@ -14,6 +17,14 @@ const roleBadges = {
 };
 
 const MemberList = ({ members = [], roles = [], memberRoles = {}, onBanUser, userProfile }) => {
+    const { t } = useTranslation();
+    const {
+        handleKickUser,
+        toggleLocalMute,
+        setUserVolume,
+        localMutedUsers,
+        userVolumes
+    } = useAppContext();
     const [contextMenu, setContextMenu] = useState(null);
 
     // Close context menu on outside click
@@ -40,7 +51,8 @@ const MemberList = ({ members = [], roles = [], memberRoles = {}, onBanUser, use
         }
         // Fallback: use status-based grouping
         if (!groupName) {
-            groupName = (member.status === 'offline' || member.status === 'Hors ligne') ? 'Hors ligne' : 'En ligne';
+            const statusKey = (member.status === 'offline' || member.status === 'Hors ligne' || !member.status) ? 'offline' : 'online';
+            groupName = t(`account.status.${statusKey}`);
         }
         if (!acc[groupName]) acc[groupName] = [];
         acc[groupName].push(member);
@@ -49,7 +61,7 @@ const MemberList = ({ members = [], roles = [], memberRoles = {}, onBanUser, use
 
     // For groupOrder, use custom roles first, then fallbacks.
     const customRoleNames = roles.map(r => r.name);
-    const fallbacks = ['En ligne', 'Hors ligne'];
+    const fallbacks = [t('account.status.online'), t('account.status.offline')];
     const groupOrder = [...customRoleNames, ...fallbacks.filter(f => !customRoleNames.includes(f))];
 
     const handleUserClick = (e, member) => {
@@ -120,14 +132,14 @@ const MemberList = ({ members = [], roles = [], memberRoles = {}, onBanUser, use
                                             className={`status-indicator ${member.status === 'offline' || member.status === 'Hors ligne' ? 'offline' : ''}`}
                                             style={{
                                                 backgroundColor: (member.name === 'Satoshi (Moi)' ?
-                                                    (userProfile?.status === 'Occupé' ? 'var(--danger-color)' :
-                                                        userProfile?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
-                                                            userProfile?.status === 'Hors ligne' ? 'transparent' : 'var(--success-color)')
+                                                    (userProfile?.status === 'dnd' ? 'var(--danger-color)' :
+                                                        userProfile?.status === 'idle' ? 'var(--warning-color, #f0b232)' :
+                                                            (userProfile?.status === 'invisible' || userProfile?.status === 'offline') ? 'transparent' : 'var(--success-color)')
                                                     :
-                                                    (member.status === 'Occupé' ? 'var(--danger-color)' :
-                                                        member.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
-                                                            (member.status === 'offline' || member.status === 'Hors ligne') ? 'transparent' : '')),
-                                                ...((member.name === 'Satoshi (Moi)' && userProfile?.status === 'Hors ligne') || member.status === 'offline' || member.status === 'Hors ligne' ? { border: '3px solid var(--text-muted)' } : {})
+                                                    (member.status === 'dnd' || member.status === 'Occupé' ? 'var(--danger-color)' :
+                                                        member.status === 'idle' || member.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
+                                                            (member.status === 'offline' || member.status === 'invisible' || member.status === 'Hors ligne') ? 'transparent' : 'var(--success-color)')),
+                                                ...((member.name === 'Satoshi (Moi)' && (userProfile?.status === 'invisible' || userProfile?.status === 'offline')) || (member.status === 'offline' || member.status === 'invisible' || member.status === 'Hors ligne') ? { border: '3px solid var(--text-muted)' } : {})
                                             }}
                                         ></div>
                                     </div>
@@ -182,8 +194,40 @@ const MemberList = ({ members = [], roles = [], memberRoles = {}, onBanUser, use
                         if (onBanUser) onBanUser(contextMenu.memberName);
                         setContextMenu(null);
                     }}>
-                        <span>Bannir {contextMenu.memberName}</span>
+                        <span>{t('common.delete')} (Ban)</span>
                         <Ban size={16} />
+                    </div>
+                    <div className="context-menu-item danger" onClick={(e) => {
+                        e.stopPropagation();
+                        if (handleKickUser) handleKickUser(contextMenu.memberName);
+                        setContextMenu(null);
+                    }}>
+                        <span>{t('account.kick')}</span>
+                        <CircleOff size={16} />
+                    </div>
+                    <div className="context-menu-separator" style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }}></div>
+                    <div className="context-menu-item" onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLocalMute(contextMenu.memberName);
+                        setContextMenu(null);
+                    }}>
+                        <span>{localMutedUsers.includes(contextMenu.memberName) ? t('account.unmute') : t('account.mute_local')}</span>
+                        {localMutedUsers.includes(contextMenu.memberName) ? <Volume2 size={16} /> : <MicOff size={16} />}
+                    </div>
+                    <div className="context-menu-item-range" style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            <span>{t('account.volume')}</span>
+                            <span>{userVolumes[contextMenu.memberName] || 100}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="200"
+                            value={userVolumes[contextMenu.memberName] || 100}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => setUserVolume(contextMenu.memberName, parseInt(e.target.value))}
+                            style={{ width: '100%', accentColor: 'var(--accent-color)' }}
+                        />
                     </div>
                 </div>,
                 document.body

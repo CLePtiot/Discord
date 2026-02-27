@@ -18,33 +18,41 @@ const ServerSettingsModal = lazy(() => import('./components/ServerSettingsModal'
 import MobileDrawer from './components/MobileDrawer';
 import MemberList from './components/MemberList';
 import VoiceCallView from './components/VoiceCallView';
+import AuthPage from './components/AuthPage';
 import './index.css';
 
 function App() {
+  const context = useAppContext();
+
+  // Early return if context is not available yet (safety guard)
+  if (!context) return <div style={{ background: '#111214', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Initialisation...</div>;
+
   const {
-    isServerModalOpen, setIsServerModalOpen,
-    isServerSettingsOpen, setIsServerSettingsOpen,
-    isSettingsOpen, setIsSettingsOpen,
-    isExploreModalOpen, setIsExploreModalOpen,
-    isCommandCenterOpen, setIsCommandCenterOpen,
-    isMemberListOpen, currentView,
-    isMobileMenuOpen, setIsMobileMenuOpen,
-    preferences, userProfile, setUserProfile, setPreferences, handleLogout,
+    isServerModalOpen = false, setIsServerModalOpen,
+    isServerSettingsOpen = false, setIsServerSettingsOpen,
+    isSettingsOpen = false, setIsSettingsOpen,
+    isExploreModalOpen = false, setIsExploreModalOpen,
+    isCommandCenterOpen = false, setIsCommandCenterOpen,
+    isMemberListOpen = false, currentView,
+    isMobileMenuOpen = false, setIsMobileMenuOpen,
+    preferences = {}, userProfile, setUserProfile, setPreferences, handleLogout,
     handleCreateServer, activeServer, serverChannels,
-    activeServerId, channelsByServer, setChannelsByServer, members, handleBanUser,
+    activeServerId, servers, setServers, channelsByServer, setChannelsByServer, members, handleBanUser,
     rolesByServer, setRolesByServer,
     memberRolesByServer, setMemberRolesByServer
-  } = useAppContext();
+  } = context || {};
 
-  const { playMessageSend, playNotificationSound, playCommandOpen } = useSoundFeedback(preferences.appSounds !== false);
+  const { playMessageSend, playNotificationSound, playCommandOpen } = useSoundFeedback(preferences?.appSounds !== false);
 
   useEffect(() => {
     const root = document.documentElement;
+    root.setAttribute('data-theme', preferences.theme || 'dark');
+
     if (preferences.theme === 'amoled') {
-      root.style.setProperty('--bg-app', '#000000');
       document.body.style.background = '#000000';
+    } else if (preferences.theme === 'light') {
+      document.body.style.background = '#f2f3f5';
     } else {
-      root.style.setProperty('--bg-app', '#111214');
       document.body.style.background = '';
     }
 
@@ -52,6 +60,17 @@ function App() {
     root.style.setProperty('--blur-intensity', `${preferences.blurIntensity ?? 40}px`);
     root.style.setProperty('--chat-font-size', `${preferences.fontSize ?? 16}px`);
   }, [preferences]);
+
+  // If user is not authenticated, show Auth Page
+  if (!userProfile) {
+    return (
+      <LanguageProvider language={preferences?.language || 'fr'}>
+        <ToastProvider>
+          <AuthPage onLogin={(profile) => setUserProfile(profile)} />
+        </ToastProvider>
+      </LanguageProvider>
+    );
+  }
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -91,7 +110,12 @@ function App() {
   return (
     <LanguageProvider language={preferences.language || 'fr'}>
       <ToastProvider>
-        <div className={`main-layout ${preferences.stealthMode ? 'stealth-active' : ''}`}>
+        <div
+          className={`main-layout ${preferences.stealthMode ? 'stealth-active' : ''}`}
+          style={{
+            gridTemplateColumns: `var(--servers-width) var(--channels-width) 1fr ${isMemberListOpen ? 'var(--members-width)' : '0px'}`
+          }}
+        >
           <MobileDrawer isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
             {/* Colonne 1 : Serveurs */}
             <ServerSidebar />
@@ -131,7 +155,7 @@ function App() {
           )}
 
           {/* Modals with Lazy Loading */}
-          <Suspense fallback={null}>
+          <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', background: '#111214', zIndex: 9999 }}>Chargement des composants...</div>}>
             {isServerModalOpen && (
               <CreateServerModal
                 isOpen={isServerModalOpen}
@@ -145,7 +169,11 @@ function App() {
                 isOpen={isServerSettingsOpen}
                 onClose={() => setIsServerSettingsOpen(false)}
                 serverName={activeServer?.name || 'Serveur Inconnu'}
+                serverIcon={activeServer?.icon || ''}
                 categories={serverChannels}
+                onUpdateServerInfo={(newName, newIcon) => {
+                  context.updateServer(activeServerId, { name: newName, icon: newIcon });
+                }}
                 onUpdateCategories={(newCategories) => {
                   setChannelsByServer({
                     ...channelsByServer,
@@ -207,6 +235,7 @@ function App() {
                 onClose={() => setIsSettingsOpen(false)}
                 userProfile={userProfile}
                 setUserProfile={setUserProfile}
+                updateProfile={context.updateProfile}
                 preferences={preferences}
                 setPreferences={setPreferences}
                 onLogout={handleLogout}

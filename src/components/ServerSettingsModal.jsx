@@ -18,12 +18,14 @@ const roleBadges = [
     { id: 'award', icon: Award, label: 'Trophée' }
 ];
 
-const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdateCategories, initialRoles, onUpdateRoles, members = [], memberRoles: initialMemberRoles = {}, onUpdateMemberRoles }) => {
+const ServerSettingsModal = ({ isOpen, onClose, serverName, serverIcon, categories, onUpdateCategories, initialRoles, onUpdateRoles, members = [], memberRoles: initialMemberRoles = {}, onUpdateMemberRoles, onUpdateServerInfo }) => {
     const [activeTab, setActiveTab] = useState('Vue d\'ensemble');
     const { showToast } = useToast();
+    const iconInputRef = React.useRef(null);
 
     // -- State for Vue d'ensemble --
     const [currentServerName, setCurrentServerName] = useState(serverName || '');
+    const [currentServerIcon, setCurrentServerIcon] = useState(serverIcon || '');
 
     // -- State for Rôles --
     const [roles, setRoles] = useState(initialRoles || []);
@@ -39,13 +41,16 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
     useEffect(() => {
         if (isOpen) {
+            // Only initialize if we're not already in the middle of editing (or if it's the first open)
             setCurrentServerName(serverName || '');
+            setCurrentServerIcon(serverIcon || '');
+
             if (initialRoles && initialRoles.length > 0) {
                 setRoles(initialRoles);
                 setSelectedRoleId(initialRoles[0].id);
             }
             setLocalMemberRoles(initialMemberRoles || {});
-            // Flatten categories down to just channels for easy reordering across the board
+
             const allChannels = [];
             categories?.forEach(cat => {
                 cat.channels.forEach(ch => {
@@ -54,7 +59,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
             });
             setDraggableChannels(allChannels);
         }
-    }, [isOpen, serverName, categories]);
+    }, [isOpen]); // Only trigger on modal open/close
 
     if (!isOpen) return null;
 
@@ -64,9 +69,53 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
             showToast('Le nom du serveur ne peut pas être vide', 'error');
             return;
         }
-        // Save server name
-        // The parent doesn't have an `onUpdateServerName` passed, but we can pass one or update AppContext.
+
+        if (onUpdateServerInfo) {
+            onUpdateServerInfo(currentServerName.trim(), currentServerIcon);
+        }
+
         showToast('Paramètres du serveur mis à jour', 'success');
+    };
+
+    const handleIconChange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const size = 256;
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = size;
+                    canvas.height = size;
+
+                    // Center crop to a square
+                    const minDim = Math.min(img.width, img.height);
+                    const startX = (img.width - minDim) / 2;
+                    const startY = (img.height - minDim) / 2;
+
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+
+                    const dataUrl = canvas.toDataURL('image/png');
+                    setCurrentServerIcon(dataUrl);
+                };
+                img.onerror = () => {
+                    showToast('Erreur lors du chargement de l\'image', 'error');
+                };
+                img.src = event.target.result;
+            };
+            reader.onerror = () => {
+                showToast('Erreur lors de la lecture du fichier', 'error');
+            };
+            reader.readAsDataURL(file);
+            // Reset input value to allow re-selection of the same file
+            e.target.value = '';
+        } else if (file) {
+            showToast('Type de fichier non supporté. Veuillez choisir une image.', 'error');
+        }
     };
 
     const handleRoleChange = (field, value) => {
@@ -190,8 +239,8 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
 
     // --- Components ---
     const renderSidebar = () => (
-        <div className="settings-sidebar">
-            <h3 className="settings-sidebar-header">{currentServerName}</h3>
+        <div className="settings-sidebar" style={{ background: 'transparent', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 className="settings-sidebar-header" style={{ color: 'var(--text-header)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '20px', padding: '0 12px' }}>{currentServerName}</h3>
 
             <div
                 className={`settings-tab ${activeTab === 'Vue d\'ensemble' ? 'active' : ''}`}
@@ -230,10 +279,25 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                 Quitter le serveur
             </div>
 
-            <div className="settings-divider" style={{ marginTop: 'auto' }}></div>
-            <button className="settings-logout" onClick={onClose}>
-                Fermer
-            </button>
+            <motion.button
+                whileHover={{ rotate: 90 }}
+                className="settings-logout"
+                onClick={onClose}
+                style={{
+                    marginTop: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    color: 'var(--text-muted)'
+                }}
+            >
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid currentColor', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <X size={20} />
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Fermer</span>
+            </motion.button>
         </div>
     );
 
@@ -264,11 +328,31 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                         width: '100px', height: '100px', borderRadius: '50%',
                         backgroundColor: 'var(--bg-chat)', display: 'flex',
                         alignItems: 'center', justifyContent: 'center',
-                        fontSize: '32px', fontWeight: 'bold'
+                        fontSize: '32px', fontWeight: 'bold',
+                        overflow: 'hidden',
+                        color: 'white',
+                        position: 'relative'
                     }}>
-                        {currentServerName.charAt(0).toUpperCase()}
+                        {currentServerIcon && currentServerIcon.length > 5 ? (
+                            <img
+                                src={currentServerIcon}
+                                alt="Preview"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                        ) : (
+                            currentServerName.charAt(0).toUpperCase()
+                        )}
                     </div>
-                    <button className="action-button primary">Changer l'icône</button>
+                    <button className="action-button primary" onClick={() => iconInputRef.current?.click()}>
+                        Changer l'icône
+                    </button>
+                    <input
+                        type="file"
+                        ref={iconInputRef}
+                        style={{ display: 'none' }}
+                        accept="image/*"
+                        onChange={handleIconChange}
+                    />
                 </div>
             </div>
 
@@ -654,9 +738,15 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <div style={{
                                                     width: '32px', height: '32px', borderRadius: '50%',
-                                                    backgroundImage: `url(${member.avatar})`, backgroundSize: 'cover',
-                                                    backgroundColor: '#555'
-                                                }} />
+                                                    backgroundColor: '#555',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    <img
+                                                        src={member.avatar}
+                                                        alt={member.name}
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                                    />
+                                                </div>
                                                 <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-header)' }}>
                                                     {member.name}
                                                 </span>
@@ -752,6 +842,7 @@ const ServerSettingsModal = ({ isOpen, onClose, serverName, categories, onUpdate
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                style={{ backdropFilter: 'blur(32px) saturate(180%)', background: 'rgba(15, 15, 20, 0.85)' }}
             >
                 {/* Structure identique au SettingsModal existant (FullScreen) */}
                 <div className="settings-layout">

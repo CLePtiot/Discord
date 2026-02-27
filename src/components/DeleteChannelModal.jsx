@@ -18,16 +18,11 @@ const DeleteChannelModal = ({ isOpen, onClose, onDelete, channelName }) => {
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="modal-overlay glass-panel-overlay"
+                    className="modal-overlay"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(0,0,0,0.75)', zIndex: 10000,
-                        backdropFilter: 'blur(8px)'
-                    }}
+                    style={{ zIndex: 10000 }}
                     onClick={onClose}
                 >
                     <motion.div
@@ -38,52 +33,63 @@ const DeleteChannelModal = ({ isOpen, onClose, onDelete, channelName }) => {
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         style={{
                             width: '440px',
-                            background: 'var(--bg-secondary)',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
-                            display: 'flex', flexDirection: 'column'
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: 0
                         }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <div style={{ padding: '24px 24px 16px', position: 'relative' }}>
-                            <h2 style={{ fontSize: '20px', fontWeight: 700, margin: '0', color: 'var(--text-header)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <AlertTriangle size={24} color="var(--danger-color)" />
+                        <div style={{ padding: '32px 32px 16px', position: 'relative' }}>
+                            <h2 style={{
+                                fontSize: '24px',
+                                fontWeight: 800,
+                                margin: '0',
+                                color: 'var(--text-header)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                letterSpacing: '-0.02em'
+                            }}>
+                                <AlertTriangle size={28} color="var(--danger-color)" />
                                 Supprimer le salon
                             </h2>
                         </div>
 
-                        <div style={{ padding: '0 24px 24px', color: 'var(--text-normal)', fontSize: '15px', lineHeight: '1.5' }}>
-                            Êtes-vous sûr de vouloir supprimer le salon <strong>#{channelName}</strong> ? Cette action ne peut pas être annulée.
+                        <div style={{ padding: '0 32px 24px', color: 'var(--text-normal)', fontSize: '16px', lineHeight: '1.6' }}>
+                            Êtes-vous sûr de vouloir supprimer le salon <strong style={{ color: 'var(--text-header)' }}>#{channelName}</strong> ? Cette action ne peut pas être annulée.
                         </div>
 
                         {/* Footer buttons */}
-                        <div style={{ background: 'var(--bg-secondary-alt)', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                        <div style={{
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '24px 32px',
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '16px',
+                            borderTop: '1px solid rgba(255,255,255,0.05)'
+                        }}>
                             <button
                                 onClick={onClose}
                                 style={{
-                                    background: 'transparent', color: 'var(--text-normal)', border: 'none',
-                                    padding: '10px 24px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
-                                    transition: 'text-decoration 0.2s'
+                                    background: 'transparent', color: 'white', border: 'none',
+                                    padding: '10px 24px', borderRadius: '6px', cursor: 'pointer', fontSize: '15px', fontWeight: 500
                                 }}
-                                onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
-                                onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
                             >
                                 Annuler
                             </button>
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={onDelete}
                                 style={{
                                     background: 'var(--danger-color)', color: 'white', border: 'none',
-                                    padding: '10px 24px', borderRadius: '4px', cursor: 'pointer',
-                                    fontSize: '14px', fontWeight: 500,
-                                    transition: 'background 0.2s'
+                                    padding: '12px 32px', borderRadius: '6px', cursor: 'pointer',
+                                    fontSize: '15px', fontWeight: '700',
+                                    boxShadow: '0 4px 12px rgba(218, 55, 60, 0.3)'
                                 }}
-                                onMouseEnter={(e) => e.target.style.background = '#a12d31'}
-                                onMouseLeave={(e) => e.target.style.background = 'var(--danger-color)'}
                             >
                                 Supprimer le salon
-                            </button>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </motion.div>

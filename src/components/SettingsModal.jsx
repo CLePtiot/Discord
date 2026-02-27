@@ -14,7 +14,7 @@ import TextImagesTab from './SettingsTabs/TextImagesTab';
 import LanguageTab from './SettingsTabs/LanguageTab';
 import AdvancedTab from './SettingsTabs/AdvancedTab';
 
-const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferences, setPreferences, onLogout }) => {
+const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, updateProfile, preferences, setPreferences, onLogout }) => {
     const [activeTab, setActiveTab] = useState('my-account');
     const { t } = useTranslation();
 
@@ -62,7 +62,7 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
     const renderTabContent = () => {
         switch (activeTab) {
             case 'my-account':
-                return <MyAccountTab userProfile={userProfile} setUserProfile={setUserProfile} onLogout={onLogout} />;
+                return <MyAccountTab userProfile={userProfile} setUserProfile={setUserProfile} updateProfile={updateProfile} onLogout={onLogout} />;
             case 'user-profile':
                 return <UserProfileTab userProfile={userProfile} setUserProfile={setUserProfile} />;
             case 'privacy':
@@ -100,7 +100,9 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                     style={{
                         position: 'fixed',
                         top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: preferences.theme === 'amoled' ? '#000000' : '#313338',
+                        backgroundColor: 'rgba(15, 15, 15, 0.4)',
+                        backdropFilter: 'blur(30px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
                         zIndex: 9999,
                         display: 'flex',
                         color: 'var(--text-normal)'
@@ -108,9 +110,10 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                 >
                     {/* Sidebar */}
                     <div style={{
-                        width: '218px',
-                        minWidth: '218px',
-                        backgroundColor: preferences.theme === 'amoled' ? '#0a0a0a' : '#2b2d31',
+                        width: '240px',
+                        minWidth: '240px',
+                        backgroundColor: 'var(--bg-servers)',
+                        borderRight: '1px solid var(--border-color)',
                         display: 'flex',
                         flexDirection: 'column',
                         overflowY: 'auto',
@@ -125,16 +128,20 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                                         {section.title}
                                     </div>
                                     {section.tabs.map(tab => (
-                                        <div
+                                        <motion.div
                                             key={tab.id}
+                                            whileHover={{ x: 4 }}
+                                            whileTap={{ scale: 0.98 }}
                                             className={`settings-tab-item ${activeTab === tab.id ? 'active' : ''}`}
                                             onClick={() => setActiveTab(tab.id)}
                                             style={{
-                                                color: activeTab === tab.id ? 'var(--text-header)' : 'var(--text-muted)'
+                                                color: activeTab === tab.id ? 'var(--text-header)' : 'var(--text-muted)',
+                                                padding: '10px 12px',
+                                                borderRadius: '8px'
                                             }}
                                         >
                                             <span>{tab.label}</span>
-                                        </div>
+                                        </motion.div>
                                     ))}
                                 </React.Fragment>
                             ))}
@@ -163,7 +170,7 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                         flex: 1,
                         display: 'flex',
                         justifyContent: 'flex-start',
-                        backgroundColor: preferences.theme === 'amoled' ? '#000000' : '#313338',
+                        backgroundColor: 'transparent',
                         overflowY: 'auto',
                         position: 'relative'
                     }}>
@@ -188,10 +195,16 @@ const SettingsModal = ({ isOpen, onClose, userProfile, setUserProfile, preferenc
                             marginTop: '60px',
                             flexShrink: 0
                         }}>
-                            <button className="settings-close-btn" onClick={onClose}>
-                                <X size={18} />
-                            </button>
-                            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>{t('settings.escape')}</span>
+                            <motion.button
+                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="settings-close-btn"
+                                onClick={onClose}
+                                style={{ borderRadius: '50%', padding: '8px' }}
+                            >
+                                <X size={20} />
+                            </motion.button>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', marginTop: '4px' }}>ESC</span>
                         </div>
                     </div>
                 </motion.div>

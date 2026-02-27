@@ -1,65 +1,110 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-
-const keybinds = [
-    { action: 'Ouvrir / Fermer les paramètres', keys: ['Ctrl', ','] },
-    { action: 'Recherche rapide', keys: ['Ctrl', 'K'] },
-    { action: 'Basculer le micro (Mute)', keys: ['Ctrl', 'Shift', 'M'] },
-    { action: 'Basculer le son (Sourdine)', keys: ['Ctrl', 'Shift', 'D'] },
-    { action: 'Naviguer entre les serveurs', keys: ['Ctrl', 'Alt', '↑ / ↓'] },
-    { action: 'Naviguer entre les salons', keys: ['Alt', '↑ / ↓'] },
-    { action: 'Salon vocal : Rejoindre / Quitter', keys: ['Ctrl', 'Shift', 'V'] },
-    { action: 'Marquer comme lu', keys: ['Échap'] },
-    { action: 'Charger un fichier', keys: ['Ctrl', 'U'] },
-    { action: 'Liste des amis', keys: ['Ctrl', 'Shift', 'F'] },
-    { action: 'Modifier le dernier message', keys: ['↑'] },
-    { action: 'Mentionner @tout le monde', keys: ['@', 'everyone'] }
-];
+import { Keyboard, MousePointer2, Command } from 'lucide-react';
 
 const KeybindsTab = () => {
+    const keybindGroups = [
+        {
+            title: 'Navigation',
+            binds: [
+                { action: 'Naviguer entre les serveurs', keys: ['Ctrl', 'Alt', '↑ / ↓'] },
+                { action: 'Naviguer entre les salons', keys: ['Alt', '↑ / ↓'] },
+                { action: 'Recherche rapide', keys: ['Ctrl', 'K'] },
+                { action: 'Liste des amis', keys: ['Ctrl', 'Shift', 'F'] },
+            ]
+        },
+        {
+            title: 'Chat',
+            binds: [
+                { action: 'Marquer comme lu', keys: ['Échap'] },
+                { action: 'Charger un fichier', keys: ['Ctrl', 'U'] },
+                { action: 'Modifier le dernier message', keys: ['↑'] },
+                { action: 'Mentionner @tout le monde', keys: ['@', 'everyone'] },
+            ]
+        },
+        {
+            title: 'Voix & Vidéo',
+            binds: [
+                { action: 'Basculer le micro (Mute)', keys: ['Ctrl', 'Shift', 'M'] },
+                { action: 'Basculer le son (Sourdine)', keys: ['Ctrl', 'Shift', 'D'] },
+                { action: 'Salon vocal : Rejoindre / Quitter', keys: ['Ctrl', 'Shift', 'V'] },
+            ]
+        },
+        {
+            title: 'Général',
+            binds: [
+                { action: 'Ouvrir / Fermer les paramètres', keys: ['Ctrl', ','] },
+            ]
+        }
+    ];
+
     return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', textAlign: 'center'
-        }}>
-            <div style={{
-                position: 'relative', width: '80px', height: '80px', borderRadius: '50%',
-                backgroundColor: 'rgba(88, 101, 242, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', overflow: 'hidden'
-            }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '2px solid var(--accent-color)', borderRadius: '50%', opacity: 0.5 }}></div>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>Raccourcis clavier</h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                {keybindGroups.map((group, gIdx) => (
+                    <div key={gIdx}>
+                        <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
+                            {group.title}
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {group.binds.map((bind, bIdx) => (
+                                <div key={bIdx} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '8px 0',
+                                    borderBottom: bIdx < group.binds.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
+                                }}>
+                                    <div style={{ color: 'var(--text-normal)', fontSize: '14px' }}>{bind.action}</div>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {bind.keys.map((key, kIdx) => (
+                                            <React.Fragment key={kIdx}>
+                                                <kbd style={{
+                                                    backgroundColor: 'var(--bg-tertiary)',
+                                                    border: '1px solid var(--border-color)',
+                                                    borderRadius: '4px',
+                                                    padding: '2px 6px',
+                                                    fontSize: '12px',
+                                                    color: 'var(--text-normal)',
+                                                    minWidth: '24px',
+                                                    textAlign: 'center',
+                                                    fontWeight: 600,
+                                                    boxShadow: '0 2px 0 rgba(0,0,0,0.2)'
+                                                }}>
+                                                    {key}
+                                                </kbd>
+                                                {kIdx < bind.keys.length - 1 && <span style={{ color: 'var(--text-muted)', alignSelf: 'center' }}>+</span>}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            <h2 style={{ color: 'var(--text-header)', marginBottom: '12px', fontSize: '24px' }}>Fonctionnalité en approche...</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '15px', maxWidth: '400px', marginBottom: '32px', lineHeight: 1.5 }}>
-                La configuration personnalisée des raccourcis clavier est en cours de développement. Ils seront disponibles dans une future mise à jour !
-            </p>
+            <div style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.06)', margin: '32px 0' }}></div>
 
-            {/* Animated Progress Bar */}
-            <div style={{ width: '100%', maxWidth: '300px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    <span>Progression du Dev</span>
-                    <span style={{ color: 'var(--accent-color)' }}>80%</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: '80%' }}
-                        transition={{ duration: 1.5, ease: 'easeOut' }}
-                        style={{ height: '100%', backgroundColor: 'var(--accent-color)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}
-                    >
-                        {/* Light sweep animation */}
-                        <motion.div
-                            animate={{ left: ['-100%', '200%'] }}
-                            transition={{ repeat: Infinity, duration: 2, ease: "linear", repeatDelay: 1 }}
-                            style={{
-                                position: 'absolute', top: 0, bottom: 0, width: '40px',
-                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                                transform: 'skewX(-20deg)'
-                            }}
-                        />
-                    </motion.div>
+            <div style={{
+                padding: '20px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(88, 101, 242, 0.1)',
+                border: '1px solid rgba(88, 101, 242, 0.2)',
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'center'
+            }}>
+                <Command size={24} color="var(--accent-color)" />
+                <div>
+                    <div style={{ color: 'var(--text-header)', fontWeight: 600, marginBottom: '4px' }}>
+                        Personnalisation des raccourcis
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                        La possibilité de modifier tes propres raccourcis clavier sera disponible dans une prochaine mise à jour.
+                    </div>
                 </div>
             </div>
         </motion.div>

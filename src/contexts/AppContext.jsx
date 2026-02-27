@@ -22,14 +22,48 @@ export const AppProvider = ({ children }) => {
     const [mutedServers, setMutedServers] = useLocalStorage('freedom-muted-servers', {});
     const [rolesByServer, setRolesByServer] = useLocalStorage('freedom-roles', {});
     const [memberRolesByServer, setMemberRolesByServer] = useLocalStorage('freedom-member-roles', {});
+    const [userVolumes, setUserVolumes] = useLocalStorage('freedom-user-volumes', {}); // { [userName]: volume }
+    const [localMutedUsers, setLocalMutedUsers] = useLocalStorage('freedom-local-mutes', []); // [userName]
 
-    const [userProfile, setUserProfile] = useLocalStorage('freedom-profile', {
-        name: 'Satoshi (Moi)',
-        avatar: 'https://i.pravatar.cc/150?img=11',
-        banner: '#5865F2',
-        bio: 'Développeur passionné par le futur du web.',
-        status: 'En ligne'
-    });
+    const [userProfile, setUserProfile] = useLocalStorage('freedom-profile', null);
+
+    // Robust normalization and fixing corrupt profile data
+    useEffect(() => {
+        if (!userProfile) return;
+
+        let updated = false;
+        const cleanProfile = { ...userProfile };
+
+        // 1. Map legacy or localized statuses to standardized keys
+        const statusMap = {
+            'En ligne': 'online', 'online': 'online',
+            'Occupé': 'dnd', 'dnd': 'dnd', 'busy': 'dnd',
+            'Inactif': 'idle', 'idle': 'idle',
+            'Hors ligne': 'offline', 'offline': 'offline', 'invisible': 'invisible'
+        };
+
+        const currentStatus = cleanProfile.status;
+        const standardizedStatus = statusMap[currentStatus] || 'online';
+
+        if (currentStatus !== standardizedStatus) {
+            cleanProfile.status = standardizedStatus;
+            updated = true;
+        }
+
+        // 2. Fix stale blob URLs (black screen prevention)
+        if (cleanProfile.avatar && typeof cleanProfile.avatar === 'string' && cleanProfile.avatar.startsWith('blob:')) {
+            cleanProfile.avatar = 'https://i.pravatar.cc/150?img=11';
+            updated = true;
+        }
+        if (cleanProfile.banner && typeof cleanProfile.banner === 'string' && cleanProfile.banner.startsWith('blob:')) {
+            cleanProfile.banner = '#5865F2';
+            updated = true;
+        }
+
+        if (updated) {
+            setUserProfile(cleanProfile);
+        }
+    }, [userProfile, setUserProfile]);
 
     const [preferences, setPreferences] = useLocalStorage('freedom-preferences', {
         theme: 'dark',
@@ -42,6 +76,26 @@ export const AppProvider = ({ children }) => {
 
     const handleBanUser = (authorName) => {
         setMembers(prev => prev.filter(m => m.name !== authorName));
+    };
+
+    const handleKickUser = (authorName) => {
+        // Kick is essentially a soft ban in this mock - it removes from member list
+        setMembers(prev => prev.filter(m => m.name !== authorName));
+    };
+
+    const toggleLocalMute = (userName) => {
+        setLocalMutedUsers(prev =>
+            prev.includes(userName)
+                ? prev.filter(u => u !== userName)
+                : [...prev, userName]
+        );
+    };
+
+    const setUserVolume = (userName, volume) => {
+        setUserVolumes(prev => ({
+            ...prev,
+            [userName]: volume
+        }));
     };
 
     const handleLogout = () => {
@@ -109,8 +163,16 @@ export const AppProvider = ({ children }) => {
         setActiveServerId(newServerId);
     };
 
+    const updateServer = (serverId, updates) => {
+        setServers(prev => prev.map(s => s.id === serverId ? { ...s, ...updates } : s));
+    };
+
     const activeServer = servers.find(s => s.id === activeServerId);
     const serverChannels = channelsByServer[activeServerId] || [];
+
+    const updateProfile = (updates) => {
+        setUserProfile(prev => ({ ...prev, ...updates }));
+    };
 
     const value = {
         activeServerId, setActiveServerId,
@@ -130,9 +192,13 @@ export const AppProvider = ({ children }) => {
         mutedServers, setMutedServers,
         rolesByServer, setRolesByServer,
         memberRolesByServer, setMemberRolesByServer,
+        userVolumes, setUserVolume,
+        localMutedUsers, toggleLocalMute,
         userProfile, setUserProfile,
+        updateProfile,
         preferences, setPreferences,
         handleLogout, handleCreateServer,
+        handleKickUser, updateServer,
         activeServer, serverChannels
     };
 

@@ -61,7 +61,7 @@ const VoiceCallView = () => {
                         >
                             {/* Grille des participants (pour l'instant, juste l'utilisateur) */}
                             <div className="participant-card">
-                                <div className={`participant-avatar ${isSpeaking ? 'speaking-pulse' : ''}`} style={{ backgroundImage: `url(${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'})` }}></div>
+                                <div className={`participant-avatar ${isSpeaking ? 'voice-avatar-speaking' : ''}`} style={{ backgroundImage: `url(${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'})` }}></div>
                                 <div className="participant-info">
                                     <span className="participant-name">{userProfile?.name || 'Satoshi'}</span>
                                     <div className="participant-status-icons">

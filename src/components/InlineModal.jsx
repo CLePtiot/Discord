@@ -52,7 +52,9 @@ const InlineModal = ({
                     style={{
                         position: 'fixed',
                         top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -60,20 +62,16 @@ const InlineModal = ({
                     }}
                 >
                     <motion.div
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
                         onClick={(e) => e.stopPropagation()}
+                        className="modal-content glass-panel"
                         style={{
-                            backgroundColor: '#2b2d31',
-                            borderRadius: '8px',
-                            padding: '24px',
-                            width: '420px',
-                            maxWidth: '90vw',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
-                            border: '1px solid rgba(255,255,255,0.06)',
-                            position: 'relative'
+                            padding: '32px',
+                            width: '440px',
+                            maxWidth: '90vw'
                         }}
                     >
                         {/* Close button */}
@@ -91,9 +89,12 @@ const InlineModal = ({
 
                         {/* Title */}
                         <h3 style={{
-                            color: danger ? '#da373c' : 'var(--text-header)',
-                            fontSize: '18px', fontWeight: 700,
-                            marginBottom: '8px', paddingRight: '24px'
+                            color: danger ? 'var(--danger-color)' : 'var(--text-header)',
+                            fontSize: '22px',
+                            fontWeight: '800',
+                            marginBottom: '12px',
+                            paddingRight: '24px',
+                            letterSpacing: '-0.02em'
                         }}>
                             {title}
                         </h3>
@@ -102,8 +103,9 @@ const InlineModal = ({
                         {description && (
                             <p style={{
                                 color: 'var(--text-muted)',
-                                fontSize: '14px', lineHeight: 1.5,
-                                marginBottom: '20px'
+                                fontSize: '15px',
+                                lineHeight: '1.5',
+                                marginBottom: '24px'
                             }}>
                                 {description}
                             </p>
@@ -120,14 +122,14 @@ const InlineModal = ({
                                 autoFocus
                                 style={{
                                     width: '100%',
-                                    padding: '10px 12px',
-                                    backgroundColor: '#1e1f22',
+                                    padding: '12px 16px',
+                                    backgroundColor: 'rgba(0,0,0,0.2)',
                                     border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '4px',
+                                    borderRadius: '8px',
                                     color: 'var(--text-normal)',
-                                    fontSize: '14px',
+                                    fontSize: '15px',
                                     outline: 'none',
-                                    marginBottom: '20px',
+                                    marginBottom: '24px',
                                     boxSizing: 'border-box'
                                 }}
                             />
@@ -137,26 +139,31 @@ const InlineModal = ({
                         <div style={{
                             display: 'flex',
                             justifyContent: 'flex-end',
-                            gap: '12px'
+                            gap: '12px',
+                            background: 'rgba(0,0,0,0.15)',
+                            margin: '8px -32px -32px -32px',
+                            padding: '24px 32px'
                         }}>
                             {type !== 'alert' && (
                                 <button
                                     onClick={onClose}
                                     style={{
                                         background: 'transparent',
-                                        color: 'var(--text-normal)',
+                                        color: 'white',
                                         border: 'none',
                                         padding: '10px 20px',
                                         borderRadius: '4px',
                                         cursor: 'pointer',
-                                        fontWeight: 500,
+                                        fontWeight: '500',
                                         fontSize: '14px'
                                     }}
                                 >
                                     {cancelLabel}
                                 </button>
                             )}
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => {
                                     if (type === 'prompt') {
                                         onConfirm?.(inputValue);
@@ -166,18 +173,19 @@ const InlineModal = ({
                                     onClose();
                                 }}
                                 style={{
-                                    background: danger ? '#da373c' : 'var(--accent-color)',
+                                    background: danger ? 'var(--danger-color)' : 'var(--accent-color)',
                                     color: 'white',
                                     border: 'none',
-                                    padding: '10px 20px',
+                                    padding: '10px 24px',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
-                                    fontWeight: 600,
-                                    fontSize: '14px'
+                                    fontWeight: '700',
+                                    fontSize: '14px',
+                                    boxShadow: danger ? '0 4px 12px rgba(218, 55, 60, 0.3)' : '0 4px 12px rgba(88, 101, 242, 0.3)'
                                 }}
                             >
                                 {type === 'alert' ? 'OK' : confirmLabel}
-                            </button>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </motion.div>

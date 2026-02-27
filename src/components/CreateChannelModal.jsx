@@ -36,16 +36,11 @@ const CreateChannelModal = ({ isOpen, onClose, onCreate, categoryName }) => {
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="modal-overlay glass-panel-overlay"
+                    className="modal-overlay"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(0,0,0,0.7)', zIndex: 9999,
-                        backdropFilter: 'blur(8px)'
-                    }}
+                    style={{ zIndex: 9999 }}
                     onClick={onClose}
                 >
                     <motion.div
@@ -55,82 +50,71 @@ const CreateChannelModal = ({ isOpen, onClose, onCreate, categoryName }) => {
                         exit={{ scale: 0.9, opacity: 0, y: 30 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 400 }}
                         style={{
-                            width: '540px',
-                            background: 'var(--bg-secondary)',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            boxShadow: '0 12px 48px rgba(0,0,0,0.8)',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            display: 'flex', flexDirection: 'column'
+                            width: '460px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: 0
                         }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <div style={{ padding: '24px 24px 16px', position: 'relative' }}>
+                        <div style={{ padding: '32px 32px 16px', position: 'relative' }}>
                             <button onClick={onClose} style={{
-                                position: 'absolute', top: '16px', right: '16px',
-                                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                                padding: '4px', borderRadius: '4px', transition: 'all 0.2s',
-                            }}
-                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-normal)'; e.currentTarget.style.background = 'var(--bg-modifier-hover)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
-                            >
-                                <X size={20} />
+                                position: 'absolute', top: '24px', right: '24px',
+                                background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                                padding: '6px', borderRadius: '50%', transition: 'all 0.2s',
+                                width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <X size={18} />
                             </button>
-                            <h2 style={{ fontSize: '20px', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--text-header)' }}>Créer un salon</h2>
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                            <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--text-header)', letterSpacing: '-0.02em' }}>Créer un salon</h2>
+                            <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
                                 dans <strong style={{ color: 'var(--text-normal)' }}>{categoryName}</strong>
                             </p>
                         </div>
 
-                        <div style={{ padding: '0 24px 24px' }}>
+                        <div style={{ padding: '0 32px 32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             {/* Channel Type Selection */}
-                            <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Type de salon</label>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--text-header)', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.05em' }}>Type de salon</label>
 
-                                {/* Text Option */}
-                                <div
-                                    onClick={() => setChannelType('text')}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-                                        background: channelType === 'text' ? 'var(--bg-active)' : 'var(--bg-modifier-hover)',
-                                        borderRadius: '8px', cursor: 'pointer', marginBottom: '8px',
-                                        border: channelType === 'text' ? '1px solid var(--accent-color)' : '1px solid transparent',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    <Hash size={24} color="var(--text-muted)" />
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ color: 'var(--text-header)', fontSize: '16px', fontWeight: 500 }}>Texte</div>
-                                        <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Envoyez des messages, des images, des GIF, des avis et bien plus encore</div>
-                                    </div>
-                                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: channelType === 'text' ? '6px solid var(--accent-color)' : '1px solid var(--text-muted)' }}></div>
-                                </div>
-
-                                {/* Voice Option */}
-                                <div
-                                    onClick={() => setChannelType('voice')}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-                                        background: channelType === 'voice' ? 'var(--bg-active)' : 'var(--bg-modifier-hover)',
-                                        borderRadius: '8px', cursor: 'pointer',
-                                        border: channelType === 'voice' ? '1px solid var(--accent-color)' : '1px solid transparent',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    <Volume2 size={24} color="var(--text-muted)" />
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ color: 'var(--text-header)', fontSize: '16px', fontWeight: 500 }}>Vocal</div>
-                                        <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Discutez de vive voix, partagez une vidéo, ou votre écran avec vos amis</div>
-                                    </div>
-                                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: channelType === 'voice' ? '6px solid var(--accent-color)' : '1px solid var(--text-muted)' }}></div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {[
+                                        { id: 'text', icon: <Hash size={24} />, label: 'Texte', desc: 'Messages, images, GIF et avis.' },
+                                        { id: 'voice', icon: <Volume2 size={24} />, label: 'Vocal', desc: 'Voix, vidéo et partage d\'écran.' }
+                                    ].map(type => (
+                                        <div
+                                            key={type.id}
+                                            onClick={() => setChannelType(type.id)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px',
+                                                background: channelType === type.id ? 'rgba(88, 101, 242, 0.15)' : 'rgba(255,255,255,0.03)',
+                                                borderRadius: '12px', cursor: 'pointer',
+                                                border: channelType === type.id ? '1px solid var(--accent-color)' : '1px solid rgba(255,255,255,0.05)',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            <div style={{ color: channelType === type.id ? 'var(--accent-color)' : 'var(--text-muted)' }}>
+                                                {type.icon}
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ color: 'var(--text-header)', fontSize: '15px', fontWeight: 700 }}>{type.label}</div>
+                                                <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{type.desc}</div>
+                                            </div>
+                                            <div style={{
+                                                width: '18px', height: '18px', borderRadius: '50%',
+                                                border: channelType === type.id ? '5px solid var(--accent-color)' : '2px solid var(--text-muted)',
+                                                transition: 'all 0.2s'
+                                            }}></div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
                             {/* Channel Name Input */}
                             <div>
-                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Nom du salon</label>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--text-header)', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.05em' }}>Nom du salon</label>
                                 <div style={{ position: 'relative' }}>
-                                    <div style={{ position: 'absolute', top: '50%', left: '12px', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                                    <div style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                                         {channelType === 'text' ? <Hash size={18} /> : <Volume2 size={18} />}
                                     </div>
                                     <input
@@ -141,18 +125,18 @@ const CreateChannelModal = ({ isOpen, onClose, onCreate, categoryName }) => {
                                         autoFocus
                                         style={{
                                             width: '100%',
-                                            background: 'var(--bg-tertiary)',
-                                            border: '1px solid rgba(0,0,0,0.3)',
-                                            borderRadius: '8px',
-                                            padding: '12px 12px 12px 36px',
+                                            background: 'rgba(0,0,0,0.2)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '10px',
+                                            padding: '14px 16px 14px 44px',
                                             color: 'var(--text-normal)',
                                             fontSize: '16px',
                                             outline: 'none',
                                             boxSizing: 'border-box',
-                                            transition: 'border-color 0.2s'
+                                            transition: 'all 0.2s'
                                         }}
-                                        onFocus={(e) => e.target.style.borderColor = 'var(--accent-color)'}
-                                        onBlur={(e) => e.target.style.borderColor = 'rgba(0,0,0,0.3)'}
+                                        onFocus={(e) => { e.target.style.borderColor = 'var(--accent-color)'; e.target.style.boxShadow = '0 0 0 4px rgba(88, 101, 242, 0.1)'; }}
+                                        onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none'; }}
                                     />
                                 </div>
                             </div>
@@ -179,33 +163,37 @@ const CreateChannelModal = ({ isOpen, onClose, onCreate, categoryName }) => {
                         </div>
 
                         {/* Footer buttons */}
-                        <div style={{ background: 'var(--bg-secondary-alt)', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                        <div style={{
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '24px 32px',
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '16px',
+                            borderTop: '1px solid rgba(255,255,255,0.05)'
+                        }}>
                             <button
                                 onClick={onClose}
                                 style={{
-                                    background: 'transparent', color: 'var(--text-normal)', border: 'none',
-                                    padding: '10px 24px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
-                                    transition: 'text-decoration 0.2s'
+                                    background: 'transparent', color: 'white', border: 'none',
+                                    padding: '10px 24px', borderRadius: '6px', cursor: 'pointer', fontSize: '15px', fontWeight: 500
                                 }}
-                                onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
-                                onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
                             >
                                 Annuler
                             </button>
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={handleCreate}
                                 disabled={!channelName.trim()}
                                 style={{
                                     background: 'var(--accent-color)', color: 'white', border: 'none',
-                                    padding: '10px 24px', borderRadius: '4px', cursor: channelName.trim() ? 'pointer' : 'not-allowed',
-                                    fontSize: '14px', fontWeight: 500, opacity: channelName.trim() ? 1 : 0.5,
-                                    transition: 'background 0.2s'
+                                    padding: '10px 32px', borderRadius: '6px', cursor: channelName.trim() ? 'pointer' : 'not-allowed',
+                                    fontSize: '15px', fontWeight: '700', opacity: channelName.trim() ? 1 : 0.5,
+                                    boxShadow: '0 4px 12px rgba(88, 101, 242, 0.3)'
                                 }}
-                                onMouseEnter={(e) => e.target.style.background = 'var(--accent-hover)'}
-                                onMouseLeave={(e) => e.target.style.background = 'var(--accent-color)'}
                             >
                                 Créer le salon
-                            </button>
+                            </motion.button>
                         </div>
                     </motion.div>
                 </motion.div>

@@ -39,6 +39,34 @@ const AppearanceTab = ({ preferences, setPreferences }) => {
                     </div>
 
                     <div
+                        onClick={() => setPreferences({ ...preferences, theme: 'light' })}
+                        style={{
+                            width: '200px',
+                            cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', gap: '8px',
+                            opacity: preferences.theme === 'light' ? 1 : 0.6
+                        }}
+                    >
+                        <div style={{
+                            height: '100px', borderRadius: '8px',
+                            backgroundColor: '#f2f3f5',
+                            border: `2px solid ${preferences.theme === 'light' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                            position: 'relative'
+                        }}>
+                            {preferences.theme === 'light' && (
+                                <div style={{
+                                    position: 'absolute', top: 8, right: 8,
+                                    width: 20, height: 20, borderRadius: '50%', backgroundColor: 'var(--accent-color)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                            )}
+                        </div>
+                        <span style={{ textAlign: 'center', color: 'var(--text-normal)', fontWeight: 500 }}>Clair</span>
+                    </div>
+
+                    <div
                         onClick={() => setPreferences({ ...preferences, theme: 'amoled' })}
                         style={{
                             width: '200px',
@@ -137,7 +165,7 @@ const AppearanceTab = ({ preferences, setPreferences }) => {
                 {/* Visual example of the theme difference */}
                 <div style={{
                     padding: '16px', borderRadius: '8px',
-                    backgroundColor: preferences.theme === 'amoled' ? '#0a0a0a' : 'var(--bg-secondary)',
+                    backgroundColor: preferences.theme === 'amoled' ? '#000000' : preferences.theme === 'light' ? '#ffffff' : '#313338',
                     border: '1px solid var(--border-color)',
                     display: 'flex', gap: '12px'
                 }}>

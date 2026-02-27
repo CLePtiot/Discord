@@ -1,7 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppContext } from '../contexts/AppContext';
+import { Volume2, VolumeX, MicOff, Mic } from 'lucide-react';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const UserPopoutCard = ({ user, position, onClose }) => {
+    const {
+        userVolumes,
+        setUserVolume,
+        localMutedUsers,
+        toggleLocalMute
+    } = useAppContext();
+    const { t } = useTranslation();
     const popoutRef = useRef(null);
 
     // Close on click outside or escape key
@@ -80,11 +90,11 @@ const UserPopoutCard = ({ user, position, onClose }) => {
                         <div style={{
                             position: 'absolute', bottom: -2, right: -2,
                             width: '16px', height: '16px', borderRadius: '50%',
-                            backgroundColor: (user?.status === 'Occupé' ? 'var(--danger-color)' :
-                                user?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
-                                    (user?.status === 'Hors ligne' || user?.status === 'offline') ? 'transparent' : 'var(--success-color)'),
+                            backgroundColor: (user?.status === 'dnd' || user?.status === 'Occupé' ? 'var(--danger-color)' :
+                                user?.status === 'idle' || user?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' :
+                                    (user?.status === 'invisible' || user?.status === 'offline' || user?.status === 'Hors ligne') ? 'transparent' : 'var(--success-color)'),
                             border: '3px solid var(--bg-primary)',
-                            ...((user?.status === 'Hors ligne' || user?.status === 'offline') ? { border: '3px solid var(--text-muted)', backgroundColor: 'var(--bg-primary)' } : {})
+                            ...((user?.status === 'invisible' || user?.status === 'offline' || user?.status === 'Hors ligne') ? { border: '3px solid var(--text-muted)', backgroundColor: 'var(--bg-primary)' } : {})
                         }}></div>
                     </div>
                 </div>
@@ -106,6 +116,45 @@ const UserPopoutCard = ({ user, position, onClose }) => {
                     <h3 style={{ color: 'var(--text-header)', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>À propos de moi</h3>
                     <div style={{ color: 'var(--text-normal)', fontSize: '14px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                         {user.bio || 'Un utilisateur mystérieux...'}
+                    </div>
+
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '16px 0' }} />
+
+                    <h3 style={{ color: 'var(--text-header)', fontSize: '12px', fontWeight: 800, marginBottom: '12px', textTransform: 'uppercase' }}>{t('account.audio_settings')}</h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '14px', color: 'var(--text-normal)' }}>{t('account.volume')}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{userVolumes[user.name] || 100}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="200"
+                            value={userVolumes[user.name] || 100}
+                            onChange={(e) => setUserVolume(user.name, parseInt(e.target.value))}
+                            style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                        />
+
+                        <button
+                            onClick={() => toggleLocalMute(user.name)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: localMutedUsers.includes(user.name) ? 'var(--danger-color)' : 'var(--bg-secondary)',
+                                border: 'none',
+                                color: 'white',
+                                padding: '8px 12px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {localMutedUsers.includes(user.name) ? <MicOff size={16} /> : <Mic size={16} />}
+                            {localMutedUsers.includes(user.name) ? t('account.muted_active') : t('account.mute')}
+                        </button>
                     </div>
 
                     <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '16px 0' }} />

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Bell, BellOff, Volume2, MessageSquare, Smartphone } from 'lucide-react';
+import { useTranslation } from '../../contexts/LanguageContext';
 
 const Toggle = ({ value, onChange }) => (
     <div className={`toggle-switch ${value ? 'on' : 'off'}`} onClick={() => onChange(!value)}>
@@ -8,50 +10,112 @@ const Toggle = ({ value, onChange }) => (
 );
 
 const NotificationsTab = () => {
+    const { t } = useTranslation();
+    const [desktopNotifications, setDesktopNotifications] = useState(true);
+    const [unreadBadge, setUnreadBadge] = useState(true);
+    const [pushNotifications, setPushNotifications] = useState(false);
+    const [notifSounds, setNotifSounds] = useState(true);
+
+    const notificationSettings = [
+        {
+            label: 'Activer les notifications de bureau',
+            desc: 'Affiche une notification de bureau pour les nouveaux messages.',
+            icon: <Bell size={16} color="var(--accent-color)" />,
+            value: desktopNotifications,
+            onChange: setDesktopNotifications
+        },
+        {
+            label: 'Activer les sons de notification',
+            desc: 'Joue un son pour les nouveaux messages et mentions.',
+            icon: <Volume2 size={16} color="var(--accent-color)" />,
+            value: notifSounds,
+            onChange: setNotifSounds
+        },
+        {
+            label: 'Badge de messages non lus',
+            desc: 'Affiche un badge rouge sur l\'icône de l\'application lorsqu\'il y a des messages non lus.',
+            icon: <MessageSquare size={16} color="var(--accent-color)" />,
+            value: unreadBadge,
+            onChange: setUnreadBadge
+        },
+        {
+            label: 'Notifications Push sur mobile',
+            desc: 'Reçois des notifications sur ton appareil mobile lorsque tu n\'es pas actif sur ordinateur.',
+            icon: <Smartphone size={16} color="var(--accent-color)" />,
+            value: pushNotifications,
+            onChange: setPushNotifications
+        }
+    ];
+
     return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', textAlign: 'center'
-        }}>
-            <div style={{
-                position: 'relative', width: '80px', height: '80px', borderRadius: '50%',
-                backgroundColor: 'rgba(88, 101, 242, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', overflow: 'hidden'
-            }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '2px solid var(--accent-color)', borderRadius: '50%', opacity: 0.5 }}></div>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>Notifications</h2>
+
+            <div style={{ marginBottom: '32px' }}>
+                <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
+                    Paramètres de notification
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {notificationSettings.map((s, i) => (
+                        <div key={i} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '12px 0', borderBottom: i < notificationSettings.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
+                        }}>
+                            <div style={{ flex: 1, paddingRight: '16px' }}>
+                                <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {s.icon}
+                                    {s.label}
+                                </div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{s.desc}</div>
+                            </div>
+                            <Toggle value={s.value} onChange={s.onChange} />
+                        </div>
+                    ))}
+                </div>
             </div>
 
-            <h2 style={{ color: 'var(--text-header)', marginBottom: '12px', fontSize: '24px' }}>Fonctionnalité en approche...</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '15px', maxWidth: '400px', marginBottom: '32px', lineHeight: 1.5 }}>
-                Les paramètres de notifications avancées sont en cours de développement. Ils seront disponibles dans une future mise à jour !
-            </p>
+            <div style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.06)', margin: '24px 0' }}></div>
 
-            {/* Animated Progress Bar */}
-            <div style={{ width: '100%', maxWidth: '300px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    <span>Progression du Dev</span>
-                    <span style={{ color: 'var(--accent-color)' }}>80%</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: '80%' }}
-                        transition={{ duration: 1.5, ease: 'easeOut' }}
-                        style={{ height: '100%', backgroundColor: 'var(--accent-color)', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}
-                    >
-                        {/* Light sweep animation */}
-                        <motion.div
-                            animate={{ left: ['-100%', '200%'] }}
-                            transition={{ repeat: Infinity, duration: 2, ease: "linear", repeatDelay: 1 }}
-                            style={{
-                                position: 'absolute', top: 0, bottom: 0, width: '40px',
-                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                                transform: 'skewX(-20deg)'
-                            }}
-                        />
-                    </motion.div>
-                </div>
+            {/* Test Notification Button */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase' }}>
+                    Test des notifications
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                    Tu ne sais pas si tes notifications fonctionnent ? Clique sur le bouton ci-dessous pour envoyer une notification de test.
+                </p>
+                <button
+                    style={{
+                        alignSelf: 'flex-start',
+                        background: 'var(--accent-color)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '4px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s'
+                    }}
+                    onClick={() => {
+                        if (Notification.permission === "granted") {
+                            new Notification("Project Freedom", {
+                                body: "Ceci est une notification de test !",
+                                icon: "/favicon.ico"
+                            });
+                        } else if (Notification.permission !== "denied") {
+                            Notification.requestPermission().then(permission => {
+                                if (permission === "granted") {
+                                    new Notification("Project Freedom", {
+                                        body: "Ceci est une notification de test !",
+                                        icon: "/favicon.ico"
+                                    });
+                                }
+                            });
+                        }
+                    }}
+                >
+                    Envoyer une notification de test
+                </button>
             </div>
         </motion.div>
     );

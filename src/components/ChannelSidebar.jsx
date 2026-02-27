@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor, PlusCircle, Trash2, Lock } from 'lucide-react';
+import { Hash, Volume2, Mic, MicOff, Headphones, HeadphoneOff, Settings, ChevronDown, Users, PhoneOff, Monitor, PlusCircle, Trash2, Lock, Check, Moon, CircleOff, Circle } from 'lucide-react';
 import { useToast } from './Toast';
 import { useAppContext } from '../contexts/AppContext';
 import { useVoiceContext } from '../contexts/VoiceContext';
+import { useTranslation } from '../contexts/LanguageContext';
 import CreateChannelModal from './CreateChannelModal';
 import DeleteChannelModal from './DeleteChannelModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ChannelSidebar = () => {
     const {
         activeServer, serverChannels, activeChannelId, setActiveChannelId,
         currentView, setCurrentView, setIsMobileMenuOpen,
-        userProfile, setIsSettingsOpen, setIsServerSettingsOpen,
+        userProfile, setUserProfile, setIsSettingsOpen, setIsServerSettingsOpen,
         channelsByServer, setChannelsByServer, activeServerId
     } = useAppContext();
+    const { t } = useTranslation();
 
     const {
         activeVoiceChannelId, setActiveVoiceChannelId, isSpeaking, setIsSpeaking,
@@ -30,6 +33,23 @@ const ChannelSidebar = () => {
     const isFriendsViewActive = currentView === 'friends';
     const [createChannelModal, setCreateChannelModal] = useState({ isOpen: false, categoryName: '' });
     const [deleteChannelModal, setDeleteChannelModal] = useState({ isOpen: false, categoryName: '', channelId: '', channelName: '' });
+    const [showStatusMenu, setShowStatusMenu] = useState(false);
+    const statusMenuRef = useRef(null);
+    const statusTriggerRef = useRef(null);
+
+    // Close status menu on click outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (statusMenuRef.current &&
+                !statusMenuRef.current.contains(event.target) &&
+                statusTriggerRef.current &&
+                !statusTriggerRef.current.contains(event.target)) {
+                setShowStatusMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Find the active voice channel name
     const getActiveVoiceChannelName = () => {
@@ -186,10 +206,18 @@ const ChannelSidebar = () => {
                         </div>
 
                         {category.channels.map(channel => {
-                            const isText = channel.type === 'text';
+                            const isText = channel.type === 'text' || channel.type === 'announcement' || channel.type === 'forum';
                             const isActiveText = isText && activeChannelId === channel.id;
-                            const isActiveVoice = !isText && channel.id === activeVoiceChannelId;
-                            const Icon = isText ? Hash : Volume2;
+                            const isActiveVoice = channel.type === 'voice' && channel.id === activeVoiceChannelId;
+
+                            let Icon = Hash;
+                            if (channel.type === 'voice') Icon = Volume2;
+                            else if (channel.type === 'announcement') Icon = (props) => (
+                                <svg {...props} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 13v-2Z" /><path d="M11.6 16.8 a3 3 0 1 1-5.8-0.8" /></svg>
+                            );
+                            else if (channel.type === 'forum') Icon = (props) => (
+                                <svg {...props} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
+                            );
 
                             return (
                                 <React.Fragment key={channel.id}>
@@ -197,7 +225,8 @@ const ChannelSidebar = () => {
                                         className={`channel-item ${isActiveText || isActiveVoice ? 'active' : ''}`}
                                         onClick={() => {
                                             setIsMobileMenuOpen(false);
-                                            isText ? setActiveChannelId(channel.id) : setActiveVoiceChannelId(channel.id);
+                                            if (channel.type === 'voice') setActiveVoiceChannelId(channel.id);
+                                            else setActiveChannelId(channel.id);
                                         }}
                                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                     >
@@ -231,11 +260,17 @@ const ChannelSidebar = () => {
                                         <div style={{ padding: '4px 12px 12px 32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <div className={isSpeaking ? 'voice-avatar-speaking' : ''} style={{
                                                 width: '28px', height: '28px', borderRadius: '50%',
-                                                backgroundImage: `url(${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'})`,
-                                                backgroundSize: 'cover',
+                                                backgroundColor: 'var(--bg-chat)',
                                                 boxShadow: isSpeaking ? '0 0 0 2px var(--success-color)' : 'none',
-                                                transition: 'box-shadow 0.1s'
-                                            }}></div>
+                                                transition: 'box-shadow 0.1s',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <img
+                                                    src={userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}
+                                                    alt="Avatar"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                                />
+                                            </div>
                                             <span style={{ fontSize: '13px', color: isMuted ? 'var(--text-muted)' : 'var(--text-normal)', textDecoration: isMuted ? 'line-through' : 'none' }}>
                                                 {userProfile?.name || 'Satoshi'}
                                             </span>
@@ -295,18 +330,147 @@ const ChannelSidebar = () => {
             )}
 
             {/* User Controls */}
-            <div className="user-controls">
-                <div className="user-avatar" style={{ backgroundImage: `url(${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'})`, backgroundSize: 'cover' }}></div>
-                <div className="user-info">
-                    <div className="user-name">{userProfile?.name || 'Satoshi'}</div>
-                    <div className="user-status" style={{
-                        color: (userProfile?.status === 'En ligne' || !userProfile?.status) ? 'var(--success-color)' :
-                            userProfile?.status === 'Occupé' ? 'var(--danger-color)' :
-                                userProfile?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' : 'var(--text-muted)'
-                    }}>
-                        {userProfile?.status || 'En ligne'}
+            <div
+                className="user-controls"
+                style={{
+                    position: 'relative',
+                    borderTop: `1px solid ${userProfile?.status === 'dnd' ? 'rgba(242, 63, 67, 0.3)' :
+                        userProfile?.status === 'idle' ? 'rgba(240, 178, 50, 0.3)' :
+                            userProfile?.status === 'online' ? 'rgba(35, 165, 89, 0.3)' :
+                                'rgba(255, 255, 255, 0.06)'
+                        }`,
+                    background: userProfile?.status === 'dnd' ? 'linear-gradient(to top, rgba(242, 63, 67, 0.05), transparent)' :
+                        userProfile?.status === 'idle' ? 'linear-gradient(to top, rgba(240, 178, 50, 0.05), transparent)' :
+                            userProfile?.status === 'online' ? 'linear-gradient(to top, rgba(35, 165, 89, 0.05), transparent)' :
+                                'rgba(35, 36, 40, 0.7)',
+                    transition: 'all 0.3s ease'
+                }}
+            >
+                <div
+                    ref={statusTriggerRef}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, cursor: 'pointer', zIndex: 1001 }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowStatusMenu(!showStatusMenu);
+                    }}
+                >
+                    <div className="user-avatar-wrapper" style={{ position: 'relative' }}>
+                        <div className="user-avatar" style={{ overflow: 'hidden', background: 'var(--bg-chat)' }}>
+                            <img
+                                src={userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}
+                                alt="Avatar"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                        </div>
+                        <div className="status-indicator-mini" style={{
+                            position: 'absolute',
+                            bottom: '-2px',
+                            right: '-2px',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            border: '2px solid var(--bg-secondary)',
+                            backgroundColor: (userProfile?.status === 'online' || !userProfile?.status) ? 'var(--success-color)' :
+                                userProfile?.status === 'dnd' ? 'var(--danger-color)' :
+                                    userProfile?.status === 'idle' ? 'var(--warning-color, #f0b232)' : 'var(--text-muted)'
+                        }}></div>
+                    </div>
+
+                    <div className="user-info">
+                        <div className="user-name">{userProfile?.name || 'Satoshi'}</div>
+                        <div className="user-status" style={{
+                            color: (userProfile?.status === 'online' || !userProfile?.status) ? 'var(--success-color)' :
+                                userProfile?.status === 'dnd' ? 'var(--danger-color)' :
+                                    userProfile?.status === 'idle' ? 'var(--warning-color, #f0b232)' : 'var(--text-muted)'
+                        }}>
+                            {t(`account.status.${userProfile?.status || 'online'}`)}
+                        </div>
                     </div>
                 </div>
+
+                {/* Status Menu Popover with Animation */}
+                <AnimatePresence>
+                    {showStatusMenu && (
+                        <motion.div
+                            ref={statusMenuRef}
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="status-popover glass-panel"
+                            style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 12px)',
+                                left: '8px',
+                                width: '230px',
+                                padding: '8px',
+                                zIndex: 2000,
+                                boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                                backgroundColor: 'rgba(30, 31, 34, 0.95)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '12px',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            <div style={{ padding: '4px 8px 8px 8px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                                {t('account.change_status') || 'Changer de statut'}
+                            </div>
+                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 4px 8px 4px' }}></div>
+                            {[
+                                { id: 'online', label: t('account.status.online'), color: 'var(--success-color)', icon: Circle, desc: 'Fièrement en ligne' },
+                                { id: 'idle', label: t('account.status.idle'), color: 'var(--warning-color, #f0b232)', icon: Moon, desc: 'Inactif depuis un moment' },
+                                { id: 'dnd', label: t('account.status.dnd'), color: 'var(--danger-color)', icon: CircleOff, desc: 'Ne pas déranger' },
+                                { id: 'invisible', label: t('account.status.invisible'), color: 'var(--text-muted)', icon: Circle, desc: 'Invisible pour les autres' }
+                            ].map((stat) => (
+                                <div
+                                    key={stat.id}
+                                    className="status-item-premium"
+                                    onClick={() => {
+                                        setUserProfile({ ...userProfile, status: stat.id });
+                                        setShowStatusMenu(false);
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '10px 12px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        color: userProfile?.status === stat.id ? 'white' : 'var(--text-normal)',
+                                        background: userProfile?.status === stat.id ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                        marginBottom: '2px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                                        e.currentTarget.style.transform = 'translateX(4px)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = userProfile?.status === stat.id ? 'rgba(255,255,255,0.05)' : 'transparent';
+                                        e.currentTarget.style.transform = 'translateX(0)';
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '6px',
+                                        background: `${stat.color}15`
+                                    }}>
+                                        <stat.icon size={16} color={stat.color} fill={stat.id === 'invisible' ? 'none' : stat.color} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 600 }}>{stat.label}</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.8 }}>{stat.desc}</div>
+                                    </div>
+                                    {userProfile?.status === stat.id && <Check size={16} color="var(--accent-color)" />}
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 <div className="control-buttons">
                     <button className="control-btn" onClick={activeVoiceChannelId ? toggleMute : () => showToast("Rejoignez un salon vocal d'abord", "info")} style={isMuted && activeVoiceChannelId ? { color: '#da373c' } : {}} title={isMuted ? 'Réactiver le micro' : 'Couper le micro'}>
                         {isMuted && activeVoiceChannelId ? <MicOff size={18} /> : <Mic size={18} />}

@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Key, Camera } from 'lucide-react';
 import InlineModal from '../InlineModal';
+import { useTranslation } from '../../contexts/LanguageContext';
 
-const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
+const MyAccountTab = ({ userProfile, setUserProfile, updateProfile, onLogout }) => {
+    const { t } = useTranslation();
     const [showEmail, setShowEmail] = useState(false);
     const avatarInputRef = useRef(null);
     const bannerInputRef = useRef(null);
@@ -12,13 +14,37 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [editName, setEditName] = useState(userProfile?.name || '');
     const [editBio, setEditBio] = useState(userProfile?.bio || '');
-    const [editStatus, setEditStatus] = useState(userProfile?.status || 'En ligne');
+    const [editStatus, setEditStatus] = useState(userProfile?.status || 'online');
 
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            const objectUrl = URL.createObjectURL(file);
-            setUserProfile({ ...userProfile, avatar: objectUrl });
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const size = 256;
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const minDim = Math.min(img.width, img.height);
+                    const startX = (img.width - minDim) / 2;
+                    const startY = (img.height - minDim) / 2;
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    if (updateProfile) {
+                        updateProfile({ avatar: dataUrl });
+                    } else {
+                        setUserProfile({ ...userProfile, avatar: dataUrl });
+                    }
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
         }
     };
 
@@ -29,29 +55,26 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
-                    // Upscale to a minimum banner resolution using canvas bicubic interpolation
                     const minWidth = 960;
                     const minHeight = 540;
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-
-                    // Use the larger of: original size or minimum size
                     canvas.width = Math.max(img.width, minWidth);
                     canvas.height = Math.max(img.height, minHeight);
-
-                    // Enable high-quality image smoothing
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
-
-                    // Draw the image scaled to fill the canvas
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
                     const dataUrl = canvas.toDataURL('image/png');
-                    setUserProfile({ ...userProfile, banner: dataUrl });
+                    if (updateProfile) {
+                        updateProfile({ banner: dataUrl });
+                    } else {
+                        setUserProfile({ ...userProfile, banner: dataUrl });
+                    }
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
+            e.target.value = '';
         }
     };
 
@@ -65,18 +88,25 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
     const [successModal, setSuccessModal] = useState({ open: false, title: '', description: '' });
 
     const handleSaveProfile = () => {
-        setUserProfile({
-            ...userProfile,
+        const updates = {
             name: editName,
             bio: editBio,
             status: editStatus
-        });
+        };
+        if (updateProfile) {
+            updateProfile(updates);
+        } else {
+            setUserProfile({
+                ...userProfile,
+                ...updates
+            });
+        }
         setIsEditingProfile(false);
     };
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>Mon compte</h2>
+            <h2 style={{ color: 'var(--text-header)', marginBottom: '24px' }}>{t('account.title')}</h2>
 
             {/* Profile Card */}
             <div style={{
@@ -88,8 +118,6 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                 <div style={{
                     height: '140px',
                     backgroundColor: userProfile?.banner?.startsWith?.('#') ? userProfile.banner : '#5865F2',
-                    backgroundImage: userProfile?.banner?.startsWith?.('#') ? 'none' : `url("${userProfile.banner}")`,
-                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
                     position: 'relative', cursor: 'pointer',
                     overflow: 'hidden'
                 }}
@@ -103,6 +131,13 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         if (overlay) overlay.style.opacity = '0';
                     }}
                 >
+                    {userProfile?.banner && !userProfile.banner.startsWith('#') && (
+                        <img
+                            src={userProfile.banner}
+                            alt="Banner"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                    )}
                     <div className="banner-overlay" style={{
                         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -110,7 +145,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         opacity: 0, transition: 'opacity 0.2s', zIndex: 1
                     }}>
                         <Camera color="white" size={24} />
-                        <span style={{ color: 'white', fontWeight: 600, fontSize: '14px' }}>Changer la bannière</span>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '14px' }}>{t('account.change_banner')}</span>
                     </div>
                 </div>
                 <input
@@ -129,24 +164,30 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                 style={{
                                     width: '100px', height: '100px', borderRadius: '50%',
                                     border: '6px solid var(--bg-secondary)',
-                                    backgroundImage: `url("${userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}")`,
-                                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+                                    backgroundColor: 'var(--bg-chat)',
                                     position: 'relative', cursor: 'pointer', flexShrink: 0,
-                                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                                    overflow: 'hidden'
                                 }}
                                 onClick={() => avatarInputRef.current?.click()}
                             >
+                                <img
+                                    src={userProfile?.avatar || 'https://i.pravatar.cc/150?img=11'}
+                                    alt="Avatar"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                />
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                                     backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '50%',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    opacity: 0, transition: 'opacity 0.2s', flexDirection: 'column', gap: '4px'
+                                    opacity: 0, transition: 'opacity 0.2s', flexDirection: 'column', gap: '4px',
+                                    zIndex: 2
                                 }}
                                     onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                                     onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
                                 >
                                     <Camera color="white" size={24} />
-                                    <span style={{ color: 'white', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' }}>Éditer</span>
+                                    <span style={{ color: 'white', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' }}>{t('account.edit')}</span>
                                 </div>
                             </div>
                             <input
@@ -185,7 +226,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                         onClick={() => {
                                             setEditName(userProfile?.name || '');
                                             setEditBio(userProfile?.bio || '');
-                                            setEditStatus(userProfile?.status || 'En ligne');
+                                            setEditStatus(userProfile?.status || 'online');
                                             setIsEditingProfile(false);
                                         }}
                                         style={{
@@ -196,7 +237,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                     >
-                                        Annuler
+                                        {t('account.cancel')}
                                     </button>
                                     <button
                                         onClick={handleSaveProfile}
@@ -208,7 +249,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                         onMouseEnter={(e) => e.currentTarget.style.background = '#1e8f4c'}
                                         onMouseLeave={(e) => e.currentTarget.style.background = 'var(--success-color)'}
                                     >
-                                        Enregistrer
+                                        {t('account.save')}
                                     </button>
                                 </div>
                             ) : (
@@ -216,7 +257,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                     onClick={() => {
                                         setEditName(userProfile?.name || '');
                                         setEditBio(userProfile?.bio || '');
-                                        setEditStatus(userProfile?.status || 'En ligne');
+                                        setEditStatus(userProfile?.status || 'online');
                                         setIsEditingProfile(true);
                                     }}
                                     style={{
@@ -227,7 +268,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                     onMouseEnter={(e) => e.currentTarget.style.background = '#4752c4'}
                                     onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-color)'}
                                 >
-                                    Modifier le profil
+                                    {t('account.edit_profile')}
                                 </button>
                             )}
                         </div>
@@ -239,46 +280,64 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                             display: 'flex', flexDirection: 'column', gap: '12px',
                             padding: '12px', borderRadius: '8px', backgroundColor: 'var(--bg-primary)'
                         }}>
-                            <div>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                    Statut d'activité
+                            {/* Quick Status Dashboard */}
+                            <div style={{ marginBottom: '8px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px' }}>
+                                    {t('account.activity_status')}
                                 </div>
-                                {isEditingProfile ? (
-                                    <select
-                                        value={editStatus}
-                                        onChange={(e) => setEditStatus(e.target.value)}
-                                        style={{
-                                            background: 'var(--bg-tertiary)', color: 'var(--text-normal)', border: '1px solid var(--border-color)',
-                                            padding: '8px', borderRadius: '4px', width: '100%', outline: 'none',
-                                            appearance: 'none',
-                                            cursor: 'pointer',
-                                            backgroundImage: 'linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%)',
-                                            backgroundPosition: 'calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)',
-                                            backgroundSize: '5px 5px, 5px 5px',
-                                            backgroundRepeat: 'no-repeat'
-                                        }}
-                                    >
-                                        <option value="En ligne" style={{ backgroundColor: 'var(--bg-secondary)' }}>En ligne</option>
-                                        <option value="Occupé" style={{ backgroundColor: 'var(--bg-secondary)' }}>Occupé</option>
-                                        <option value="Inactif" style={{ backgroundColor: 'var(--bg-secondary)' }}>Inactif</option>
-                                        <option value="Hors ligne" style={{ backgroundColor: 'var(--bg-secondary)' }}>Hors ligne</option>
-                                    </select>
-                                ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-normal)', fontSize: '14px' }}>
-                                        <div style={{
-                                            width: '10px', height: '10px', borderRadius: '50%',
-                                            backgroundColor: (userProfile?.status === 'En ligne' || !userProfile?.status) ? 'var(--success-color)' :
-                                                userProfile?.status === 'Occupé' ? 'var(--danger-color)' :
-                                                    userProfile?.status === 'Inactif' ? 'var(--warning-color, #f0b232)' : 'var(--text-muted)'
-                                        }}></div>
-                                        {userProfile?.status || 'En ligne'}
-                                    </div>
-                                )}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                                    {[
+                                        { id: 'online', color: 'var(--success-color, #23a559)', glow: 'rgba(35, 165, 89, 0.4)' },
+                                        { id: 'idle', color: 'var(--warning-color, #f0b232)', glow: 'rgba(240, 178, 50, 0.4)' },
+                                        { id: 'dnd', color: 'var(--danger-color, #da373c)', glow: 'rgba(218, 55, 60, 0.4)' },
+                                        { id: 'invisible', color: '#80848e', glow: 'rgba(128, 132, 142, 0.4)' }
+                                    ].map(statusObj => {
+                                        const isActive = (userProfile?.status || 'online') === statusObj.id;
+                                        return (
+                                            <motion.button
+                                                key={statusObj.id}
+                                                whileHover={{ scale: 1.02, backgroundColor: 'var(--bg-tertiary)' }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    setUserProfile({ ...userProfile, status: statusObj.id });
+                                                    setEditStatus(statusObj.id);
+                                                }}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px',
+                                                    padding: '12px 16px',
+                                                    background: isActive ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                                                    border: `1px solid ${isActive ? statusObj.color : 'rgba(255,255,255,0.05)'}`,
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    color: isActive ? 'var(--text-header)' : 'var(--text-normal)',
+                                                    boxShadow: isActive ? `0 0 12px ${statusObj.glow}` : 'none',
+                                                    transition: 'all 0.2s ease',
+                                                    textAlign: 'left',
+                                                    outline: 'none'
+                                                }}
+                                            >
+                                                <div style={{
+                                                    width: '12px', height: '12px', borderRadius: '50%',
+                                                    backgroundColor: statusObj.id === 'invisible' && !isActive ? 'transparent' : statusObj.color,
+                                                    boxShadow: isActive ? `0 0 8px ${statusObj.color}` : 'none',
+                                                    border: statusObj.id === 'invisible' ? `2px solid ${statusObj.color}` : 'none',
+                                                    boxSizing: 'border-box',
+                                                    flexShrink: 0
+                                                }} />
+                                                <span style={{ fontSize: '13px', fontWeight: isActive ? 600 : 500 }}>
+                                                    {t(`account.status.${statusObj.id}`)}
+                                                </span>
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             <div>
                                 <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                    À propos de moi
+                                    {t('account.about_me')}
                                 </div>
                                 {isEditingProfile ? (
                                     <textarea
@@ -305,7 +364,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         }}>
                             <div>
                                 <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                    Nom d'utilisateur
+                                    {t('account.username')}
                                 </div>
                                 <div style={{ color: 'var(--text-normal)', fontSize: '14px' }}>
                                     {userProfile?.name?.toLowerCase().replace(/\s/g, '') || 'satoshi'}
@@ -314,7 +373,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                             <button style={{
                                 background: 'var(--bg-hover)', color: 'var(--text-normal)', border: 'none',
                                 padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
-                            }} onClick={() => setUsernameModal(true)}>Modifier</button>
+                            }} onClick={() => setUsernameModal(true)}>{t('account.edit_btn')}</button>
                         </div>
 
                         {/* Email */}
@@ -324,7 +383,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         }}>
                             <div>
                                 <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                    E-mail
+                                    {t('account.email')}
                                 </div>
                                 <div style={{ color: 'var(--text-normal)', fontSize: '14px' }}>
                                     {showEmail ? (userProfile?.email || 'satoshi@protonmail.com') : 's••••••@protonmail.com'}
@@ -335,12 +394,12 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                                     background: 'var(--bg-hover)', color: 'var(--text-normal)', border: 'none',
                                     padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
                                 }} onClick={() => setShowEmail(!showEmail)}>
-                                    {showEmail ? 'Masquer' : 'Révéler'}
+                                    {showEmail ? t('account.hide') : t('account.reveal')}
                                 </button>
                                 <button style={{
                                     background: 'var(--bg-hover)', color: 'var(--text-normal)', border: 'none',
                                     padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
-                                }} onClick={() => setEmailModal(true)}>Modifier</button>
+                                }} onClick={() => setEmailModal(true)}>{t('account.edit_btn')}</button>
                             </div>
                         </div>
 
@@ -351,16 +410,16 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         }}>
                             <div>
                                 <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                    Numéro de téléphone
+                                    {t('account.phone')}
                                 </div>
                                 <div style={{ color: userProfile?.phone ? 'var(--text-normal)' : 'var(--text-muted)', fontSize: '14px' }}>
-                                    {userProfile?.phone || 'Non renseigné'}
+                                    {userProfile?.phone || t('account.not_set')}
                                 </div>
                             </div>
                             <button style={{
                                 background: 'var(--bg-hover)', color: 'var(--text-normal)', border: 'none',
                                 padding: '6px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 500, fontSize: '13px'
-                            }} onClick={() => setPhoneModal(true)}>{userProfile?.phone ? 'Modifier' : 'Ajouter'}</button>
+                            }} onClick={() => setPhoneModal(true)}>{userProfile?.phone ? t('account.edit_btn') : t('account.add')}</button>
                         </div>
                     </div>
                 </div>
@@ -371,7 +430,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             {/* Password & Authentication */}
             <div>
                 <h3 style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
-                    Mot de passe et authentification
+                    {t('account.password_auth')}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                     {/* Change Password Row */}
@@ -382,10 +441,10 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         <div style={{ flex: 1, paddingRight: '16px' }}>
                             <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <Key size={16} color="var(--accent-color)" />
-                                Mot de passe
+                                {t('account.password')}
                             </div>
                             <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                                Modifie ton mot de passe actuel pour sécuriser ton compte.
+                                {t('account.password_desc')}
                             </div>
                         </div>
                         <button
@@ -398,7 +457,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
                             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                         >
-                            Modifier
+                            {t('account.edit_btn')}
                         </button>
                     </div>
 
@@ -410,10 +469,10 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         <div style={{ flex: 1, paddingRight: '16px' }}>
                             <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <Shield size={16} color="var(--accent-color)" />
-                                Authentification à deux facteurs
+                                {t('account.2fa')}
                             </div>
                             <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                                Protège ton compte avec une couche de sécurité supplémentaire.
+                                {t('account.2fa_desc')}
                             </div>
                         </div>
                         <button
@@ -426,7 +485,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
                             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                         >
-                            Activer
+                            {t('account.enable')}
                         </button>
                     </div>
                 </div>
@@ -437,7 +496,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             {/* Danger Zone */}
             <div>
                 <h3 style={{ color: '#da373c', fontSize: '12px', fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase' }}>
-                    Suppression du compte
+                    {t('account.delete_section')}
                 </h3>
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -445,10 +504,10 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                 }}>
                     <div style={{ flex: 1, paddingRight: '16px' }}>
                         <div style={{ color: 'var(--text-normal)', fontWeight: 500, marginBottom: '4px' }}>
-                            Supprimer le compte
+                            {t('account.delete_account')}
                         </div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                            La suppression de ton compte est irréversible. Toutes tes données seront définitivement effacées.
+                            {t('account.delete_desc')}
                         </div>
                     </div>
                     <button
@@ -469,7 +528,7 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
                         onMouseEnter={(e) => { e.currentTarget.style.background = '#da373c'; e.currentTarget.style.color = 'white'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#da373c'; }}
                     >
-                        Supprimer
+                        {t('account.delete_btn')}
                     </button>
                 </div>
             </div>
@@ -480,11 +539,11 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             <InlineModal
                 isOpen={usernameModal}
                 onClose={() => setUsernameModal(false)}
-                title="Modifier le nom d'utilisateur"
-                description="Saisis ton nouveau nom d'utilisateur ci-dessous."
+                title={t('modal.change_username')}
+                description={t('modal.change_username_desc')}
                 type="prompt"
                 defaultValue={userProfile?.name || ''}
-                confirmLabel="Enregistrer"
+                confirmLabel={t('common.save')}
                 onConfirm={(newName) => {
                     if (newName && newName.trim()) {
                         setUserProfile({ ...userProfile, name: newName.trim() });
@@ -496,11 +555,11 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             <InlineModal
                 isOpen={emailModal}
                 onClose={() => setEmailModal(false)}
-                title="Modifier l'adresse e-mail"
-                description="Saisis ta nouvelle adresse e-mail ci-dessous :"
+                title={t('modal.change_email')}
+                description={t('modal.change_email_desc')}
                 type="prompt"
                 defaultValue={userProfile?.email || 'satoshi@protonmail.com'}
-                confirmLabel="Enregistrer"
+                confirmLabel={t('common.save')}
                 onConfirm={(newEmail) => {
                     if (newEmail && newEmail.trim()) {
                         setUserProfile({ ...userProfile, email: newEmail.trim() });
@@ -512,14 +571,14 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             <InlineModal
                 isOpen={passwordModal}
                 onClose={() => setPasswordModal(false)}
-                title="Changer le mot de passe"
-                description="Saisis ton nouveau mot de passe ci-dessous :"
+                title={t('modal.change_password')}
+                description={t('modal.change_password_desc')}
                 type="prompt"
                 defaultValue=""
-                confirmLabel="Enregistrer"
+                confirmLabel={t('common.save')}
                 onConfirm={(newPassword) => {
                     if (newPassword && newPassword.trim()) {
-                        setSuccessModal({ open: true, title: 'Mot de passe modifié', description: 'Ton mot de passe a été mis à jour avec succès.' });
+                        setSuccessModal({ open: true, title: t('modal.password_changed'), description: t('modal.password_changed_desc') });
                     }
                 }}
             />
@@ -528,11 +587,11 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             <InlineModal
                 isOpen={phoneModal}
                 onClose={() => setPhoneModal(false)}
-                title="Numéro de téléphone"
-                description="Saisis ton numéro de téléphone ci-dessous :"
+                title={t('modal.phone')}
+                description={t('modal.phone_desc')}
                 type="prompt"
                 defaultValue={userProfile?.phone || ''}
-                confirmLabel="Enregistrer"
+                confirmLabel={t('common.save')}
                 onConfirm={(newPhone) => {
                     if (newPhone !== undefined) {
                         setUserProfile({ ...userProfile, phone: newPhone.trim() });
@@ -544,10 +603,10 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             <InlineModal
                 isOpen={twoFaModal}
                 onClose={() => setTwoFaModal(false)}
-                title="Authentification à deux facteurs"
-                description="Scanne le QR code ci-dessous avec ton application Authenticator (Google Authenticator, Authy, etc.)."
+                title={t('modal.2fa_title')}
+                description={t('modal.2fa_desc')}
                 type="alert"
-                confirmLabel="J'ai scanné le code"
+                confirmLabel={t('modal.2fa_confirm')}
             >
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                     <div style={{
@@ -572,11 +631,11 @@ const MyAccountTab = ({ userProfile, setUserProfile, onLogout }) => {
             <InlineModal
                 isOpen={deleteModal}
                 onClose={() => setDeleteModal(false)}
-                title="Supprimer ton compte"
-                description="Es-tu sûr de vouloir supprimer définitivement ton compte ? Cette action est irréversible et toutes tes données locales seront effacées."
+                title={t('modal.delete_title')}
+                description={t('modal.delete_desc')}
                 type="confirm"
                 danger={true}
-                confirmLabel="Supprimer définitivement"
+                confirmLabel={t('modal.delete_confirm')}
                 onConfirm={() => {
                     if (onLogout) onLogout();
                 }}

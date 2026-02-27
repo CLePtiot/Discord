@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download, Pencil, MessageSquare, CornerDownRight } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Hash, Search, Bell, BellOff, Users, PlusCircle, Smile, Image as ImageIcon, Crown, Trash, Ban, X, Menu, Download, Pencil, MessageSquare, CornerDownRight, MessageSquarePlus } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_CHANNEL_NAMES } from '../mockData';
@@ -16,13 +17,15 @@ const ChatView = ({
     const {
         activeChannelId,
         activeServerId,
+        channelsByServer,
         handleBanUser,
         isMemberListOpen, setIsMemberListOpen,
         setIsMobileMenuOpen,
         userProfile,
         preferences,
         mutedServers,
-        setMutedServers
+        setMutedServers,
+        handleKickUser
     } = useAppContext();
 
     const onBanUser = handleBanUser;
@@ -40,7 +43,65 @@ const ChatView = ({
     const [selectedImage, setSelectedImage] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [isNewForumPostModalOpen, setIsNewForumPostModalOpen] = useState(false);
     const emojiPickerRef = useRef(null);
+
+    // Forum New Post Modal Component
+    const NewForumPostModal = ({ isOpen, onClose, onSubmit }) => {
+        const [title, setTitle] = useState('');
+        const [content, setContent] = useState('');
+
+        if (!isOpen) return null;
+
+        return createPortal(
+            <div className="modal-overlay" style={{ zIndex: 3000 }}>
+                <div className="modal-container glass-panel" style={{ width: '500px', padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h2 style={{ margin: 0, color: 'var(--text-header)' }}>Nouveau sujet</h2>
+                        <X size={24} cursor="pointer" onClick={onClose} color="var(--text-muted)" />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Titre du sujet</label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="De quoi souhaitez-vous discuter ?"
+                                style={{ background: 'var(--bg-active)', border: 'none', color: 'var(--text-normal)', padding: '12px', borderRadius: '4px', outline: 'none' }}
+                                autoFocus
+                            />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Message initial</label>
+                            <textarea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="Détaillez votre sujet ici..."
+                                style={{ background: 'var(--bg-active)', border: 'none', color: 'var(--text-normal)', padding: '12px', borderRadius: '4px', outline: 'none', minHeight: '120px', resize: 'vertical' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                            <button className="button-secondary" onClick={onClose} style={{ padding: '10px 24px' }}>Annuler</button>
+                            <button
+                                className="button-primary"
+                                onClick={() => {
+                                    if (title.trim() && content.trim()) {
+                                        onSubmit(title, content);
+                                    }
+                                }}
+                                style={{ padding: '10px 24px' }}
+                                disabled={!title.trim() || !content.trim()}
+                            >
+                                Créer le sujet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        );
+    };
 
     // ── Lightbox state ──
     const [lightboxSrc, setLightboxSrc] = useState(null);
@@ -100,6 +161,19 @@ const ChatView = ({
 
     const channelName = activeChannelId ? MOCK_CHANNEL_NAMES[activeChannelId] : 'sélectionnez-un-salon';
     const isDirectMessage = activeServerId === 'home';
+
+    const serverChannels = (activeServerId && channelsByServer[activeServerId]) || [];
+    let activeChannel = null;
+    if (activeChannelId) {
+        for (const category of serverChannels) {
+            const found = category.channels.find(c => c.id === activeChannelId);
+            if (found) {
+                activeChannel = found;
+                break;
+            }
+        }
+    }
+    const channelType = activeChannel?.type || 'text';
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -192,11 +266,6 @@ const ChatView = ({
         showToast(!newMutedState ? 'Notifications activées pour ce serveur' : 'Notifications désactivées pour ce serveur', !newMutedState ? 'success' : 'info');
     };
 
-    const handleSendCookie = () => {
-        sendMessage("Voici un cookie 🍪 !", null, userProfile);
-        showToast("Cookie envoyé !", "success");
-        if (playMessageSend) playMessageSend();
-    };
 
     const onEmojiClick = (emojiObject) => {
         setInputValue(prevInput => prevInput + emojiObject.emoji);
@@ -235,7 +304,7 @@ const ChatView = ({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            style={{ position: 'relative' }}
+            style={{ position: 'relative', ...style }}
         >
             {/* Drag & Drop Overlay */}
             {isDragging && (
@@ -296,19 +365,44 @@ const ChatView = ({
                 </div>
             </div>
 
-            <div className="message-history" ref={messageHistoryRef}>
+            <div
+                className="message-history"
+                ref={messageHistoryRef}
+                style={{
+                    display: 'flex',
+                    flexDirection: channelType === 'forum' ? 'row' : 'column',
+                    flexWrap: channelType === 'forum' ? 'wrap' : 'nowrap',
+                    gap: channelType === 'forum' ? '20px' : '16px',
+                    padding: channelType === 'forum' ? '24px' : '16px',
+                    alignContent: 'flex-start'
+                }}
+            >
                 {loading ? (
                     <MessageSkeleton count={5} />
                 ) : activeChannelId ? (
                     <>
                         {filteredMessages.length > 0 ? filteredMessages.map((msg) => (
                             <motion.div
-                                className="message"
+                                className={`message ${channelType === 'forum' ? 'forum-post-card' : ''}`}
                                 key={msg.id}
                                 initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.2 }}
-                                style={{ opacity: msg._optimistic ? 0.6 : 1 }}
+                                style={{
+                                    opacity: msg._optimistic ? 0.6 : 1,
+                                    ...(channelType === 'forum' ? {
+                                        background: 'rgba(255, 255, 255, 0.03)',
+                                        padding: '20px',
+                                        borderRadius: '16px',
+                                        width: 'calc(50% - 10px)',
+                                        minWidth: '300px',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px',
+                                        cursor: 'pointer'
+                                    } : { position: 'relative' })
+                                }}
                                 onContextMenu={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -335,7 +429,12 @@ const ChatView = ({
                             >
                                 <div
                                     className="message-avatar"
-                                    style={{ backgroundImage: `url(${msg.avatar})`, backgroundSize: 'cover' }}
+                                    style={{
+                                        backgroundImage: `url(${msg.avatar})`,
+                                        backgroundSize: 'cover',
+                                        width: channelType === 'forum' ? '32px' : '40px',
+                                        height: channelType === 'forum' ? '32px' : '40px'
+                                    }}
                                 ></div>
                                 <div>
                                     <div className="message-header">
@@ -425,125 +524,146 @@ const ChatView = ({
             </div>
 
             <div className="chat-input-area" style={{ position: 'relative' }}>
-                <AnimatePresence>
-                    {replyingToMessage && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, height: 0 }}
-                            animate={{ opacity: 1, y: 0, height: 'auto' }}
-                            exit={{ opacity: 0, y: 10, height: 0 }}
-                            style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                background: 'var(--bg-active)', padding: '8px 16px', borderTopLeftRadius: '8px', borderTopRightRadius: '8px',
-                                borderBottom: '1px solid var(--bg-modifier-accent)', color: 'var(--text-muted)', fontSize: '13px'
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <CornerDownRight size={14} color="var(--text-muted)" />
-                                <span>Réponse à <span style={{ color: 'var(--text-normal)', fontWeight: 600 }}>@{replyingToMessage.author}</span></span>
-                            </div>
-                            <button onClick={() => setReplyingToMessage(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={14} /></button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-                {selectedImage && (
+                {channelType === 'announcement' ? (
                     <div style={{
-                        padding: '12px',
-                        backgroundColor: 'var(--bg-active)',
-                        borderRadius: replyingToMessage ? '0' : '8px 8px 0 0',
+                        background: 'rgba(88, 101, 242, 0.1)',
+                        border: '1px solid rgba(88, 101, 242, 0.2)',
+                        padding: '16px 24px',
+                        borderRadius: '8px',
+                        margin: '0 16px 24px',
                         display: 'flex',
-                        gap: '12px',
                         alignItems: 'center',
-                        position: 'relative'
+                        justifyContent: 'center',
+                        gap: '12px',
+                        color: 'var(--text-normal)',
+                        textAlign: 'center'
                     }}>
-                        <img
-                            src={selectedImage}
-                            alt="Preview"
-                            style={{ height: '80px', borderRadius: '4px', objectFit: 'contain' }}
-                        />
-                        <button
-                            onClick={() => {
-                                if (selectedImage && selectedImage.startsWith('blob:')) {
-                                    URL.revokeObjectURL(selectedImage);
-                                }
-                                setSelectedImage(null);
-                                if (fileInputRef.current) fileInputRef.current.value = '';
-                            }}
-                            style={{
-                                position: 'absolute', top: '8px', right: '8px',
-                                background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white',
-                                borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}
-                        >
-                            ✕
-                        </button>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent-color)' }}><path d="m3 11 18-5v12L3 13v-2Z" /><path d="M11.6 16.8 a3 3 0 1 1-5.8-0.8" /></svg>
+                        <span>C'est un salon d'annonces. Seuls les administrateurs peuvent y publier des messages.</span>
                     </div>
-                )}
-                <div className="chat-input-wrapper" style={{ borderRadius: (selectedImage || replyingToMessage) ? '0 0 8px 8px' : 'var(--radius-md)' }}>
-                    <PlusCircle
-                        size={24}
-                        color="var(--text-muted)"
-                        cursor="pointer"
-                        onClick={() => fileInputRef.current?.click()}
-                    />
-                    <input
-                        type="file"
-                        accept="image/*"
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
-                        onChange={handleFileChange}
-                    />
-                    <input
-                        type="text"
-                        className="chat-input"
-                        placeholder={`Envoyer un message ${activeChannelId ? 'dans #' + channelName : ''}`}
-                        disabled={!activeChannelId}
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                    />
-                    <ImageIcon size={24} color="var(--text-muted)" cursor="pointer" title="Joindre une image" onClick={() => fileInputRef.current?.click()} />
-                    <div style={{ position: 'relative' }}>
-                        <Smile
-                            size={24}
-                            color={showEmojiPicker ? "var(--accent-color)" : "var(--text-muted)"}
-                            cursor="pointer"
-                            title="Choisir un emoji"
-                            className="emoji-toggle-btn"
-                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        />
+                ) : (
+                    <>
                         <AnimatePresence>
-                            {showEmojiPicker && (
+                            {replyingToMessage && (
                                 <motion.div
-                                    ref={emojiPickerRef}
-                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                                    transition={{ duration: 0.2 }}
+                                    initial={{ opacity: 0, y: 10, height: 0 }}
+                                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                    exit={{ opacity: 0, y: 10, height: 0 }}
                                     style={{
-                                        position: 'absolute',
-                                        bottom: 'calc(100% + 16px)',
-                                        right: 0,
-                                        zIndex: 1000,
-                                        boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-                                        borderRadius: '8px',
-                                        overflow: 'hidden'
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        background: 'var(--bg-active)', padding: '8px 16px', borderTopLeftRadius: '8px', borderTopRightRadius: '8px',
+                                        borderBottom: '1px solid var(--bg-modifier-accent)', color: 'var(--text-muted)', fontSize: '13px'
                                     }}
                                 >
-                                    <EmojiPicker
-                                        onEmojiClick={onEmojiClick}
-                                        theme="dark"
-                                        lazyLoadEmojis={true}
-                                        searchDisabled={false}
-                                        skinTonesDisabled={true}
-                                        width={320}
-                                        height={400}
-                                    />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <CornerDownRight size={14} color="var(--text-muted)" />
+                                        <span>Réponse à <span style={{ color: 'var(--text-normal)', fontWeight: 600 }}>@{replyingToMessage.author}</span></span>
+                                    </div>
+                                    <button onClick={() => setReplyingToMessage(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}><X size={14} /></button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
-                </div>
+                        {selectedImage && (
+                            <div style={{
+                                padding: '12px',
+                                backgroundColor: 'var(--bg-active)',
+                                borderRadius: replyingToMessage ? '0' : '8px 8px 0 0',
+                                display: 'flex',
+                                gap: '12px',
+                                alignItems: 'center',
+                                position: 'relative'
+                            }}>
+                                <img
+                                    src={selectedImage}
+                                    alt="Preview"
+                                    style={{ height: '80px', borderRadius: '4px', objectFit: 'contain' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (selectedImage && selectedImage.startsWith('blob:')) {
+                                            URL.revokeObjectURL(selectedImage);
+                                        }
+                                        setSelectedImage(null);
+                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                    }}
+                                    style={{
+                                        position: 'absolute', top: '8px', right: '8px',
+                                        background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white',
+                                        borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+                        <div className="chat-input-wrapper" style={{ borderRadius: (selectedImage || replyingToMessage) ? '0 0 8px 8px' : 'var(--radius-md)' }}>
+                            <PlusCircle
+                                size={24}
+                                color="var(--text-muted)"
+                                cursor="pointer"
+                                onClick={() => fileInputRef.current?.click()}
+                            />
+                            <input
+                                type="file"
+                                accept="image/*"
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                onChange={handleFileChange}
+                            />
+                            <input
+                                type="text"
+                                className="chat-input"
+                                placeholder={`Envoyer un message ${activeChannelId ? 'dans #' + channelName : ''}`}
+                                disabled={!activeChannelId}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                            />
+                            <ImageIcon size={24} color="var(--text-muted)" cursor="pointer" title="Joindre une image" onClick={() => fileInputRef.current?.click()} />
+                            <div style={{ position: 'relative' }}>
+                                <Smile
+                                    size={24}
+                                    color={showEmojiPicker ? "var(--accent-color)" : "var(--text-muted)"}
+                                    cursor="pointer"
+                                    title="Choisir un emoji"
+                                    className="emoji-toggle-btn"
+                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                />
+                                <AnimatePresence>
+                                    {showEmojiPicker && (
+                                        <motion.div
+                                            ref={emojiPickerRef}
+                                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                            transition={{ duration: 0.2 }}
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: 'calc(100% + 16px)',
+                                                right: 0,
+                                                zIndex: 1000,
+                                                boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                                                borderRadius: '8px',
+                                                overflow: 'hidden'
+                                            }}
+                                        >
+                                            <EmojiPicker
+                                                onEmojiClick={onEmojiClick}
+                                                theme="dark"
+                                                lazyLoadEmojis={true}
+                                                searchDisabled={false}
+                                                skinTonesDisabled={true}
+                                                width={320}
+                                                height={400}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Context Menu */}
@@ -580,6 +700,14 @@ const ChatView = ({
                     }}>
                         <span>Bannir {contextMenu.author}</span>
                         <Ban size={16} />
+                    </div>
+                    <div className="context-menu-item danger" onClick={(e) => {
+                        e.stopPropagation();
+                        if (handleKickUser) handleKickUser(contextMenu.author);
+                        setContextMenu(null);
+                    }}>
+                        <span>Expulser {contextMenu.author}</span>
+                        <CircleOff size={16} />
                     </div>
                 </div>
             )}

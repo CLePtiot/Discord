@@ -31,8 +31,31 @@ const UserProfileTab = ({ userProfile, setUserProfile }) => {
                 };
                 reader.readAsDataURL(file);
             } else {
-                const objectUrl = URL.createObjectURL(file);
-                setUserProfile({ ...userProfile, [field]: objectUrl });
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const size = 256;
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = size;
+                        canvas.height = size;
+
+                        // Center crop to a square
+                        const minDim = Math.min(img.width, img.height);
+                        const startX = (img.width - minDim) / 2;
+                        const startY = (img.height - minDim) / 2;
+
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+
+                        const dataUrl = canvas.toDataURL('image/png');
+                        setUserProfile({ ...userProfile, [field]: dataUrl });
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         }
     };

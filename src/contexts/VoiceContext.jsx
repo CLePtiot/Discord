@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useRef } from 'react';
 import { useAppContext } from './AppContext';
+import { playSound } from '../utils/soundUtils';
+
 
 const VoiceContext = createContext();
 
@@ -10,6 +12,8 @@ export const VoiceProvider = ({ children }) => {
     const [isMuted, setIsMuted] = useState(false);
     const [isDeafened, setIsDeafened] = useState(false);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [screenShareResolution, setScreenShareResolution] = useState('1080p');
+    const [screenShareFps, setScreenShareFps] = useState(30);
 
     const mediaStreamRef = useRef(null);
     const displayStreamRef = useRef(null);
@@ -35,6 +39,14 @@ export const VoiceProvider = ({ children }) => {
     const toggleMute = () => {
         const newMutedState = !isMuted;
         setIsMuted(newMutedState);
+
+        // Play sound
+        if (newMutedState) {
+            // No-op
+        } else {
+            // No-op
+        }
+
         if (mediaStreamRef.current) {
             mediaStreamRef.current.getAudioTracks().forEach(track => {
                 track.enabled = !newMutedState;
@@ -42,12 +54,19 @@ export const VoiceProvider = ({ children }) => {
         }
     };
 
+
     const toggleDeafen = () => {
         const newDeaf = !isDeafened;
         setIsDeafened(newDeaf);
-        if (newDeaf) setIsMuted(true);
-        else setIsMuted(false);
+
+        // Play sound
+        if (newDeaf) {
+            setIsMuted(true);
+        } else {
+            setIsMuted(false);
+        }
     };
+
 
     const handleStopScreenShare = () => {
         if (displayStreamRef.current) {
@@ -67,7 +86,24 @@ export const VoiceProvider = ({ children }) => {
                 return;
             }
             try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                const resolutionMap = {
+                    '480p': { width: 854, height: 480 },
+                    '720p': { width: 1280, height: 720 },
+                    '1080p': { width: 1920, height: 1080 },
+                    '1440p': { width: 2560, height: 1440 },
+                    '4K': { width: 3840, height: 2160 }
+                };
+
+                const targetRes = resolutionMap[screenShareResolution] || resolutionMap['1080p'];
+
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        width: { ideal: targetRes.width, max: targetRes.width },
+                        height: { ideal: targetRes.height, max: targetRes.height },
+                        frameRate: { ideal: screenShareFps, max: screenShareFps }
+                    },
+                    audio: true
+                });
                 displayStreamRef.current = stream;
                 setIsScreenSharing(true);
 
@@ -91,6 +127,8 @@ export const VoiceProvider = ({ children }) => {
         isMuted, toggleMute,
         isDeafened, toggleDeafen,
         isScreenSharing, toggleScreenShare,
+        screenShareResolution, setScreenShareResolution,
+        screenShareFps, setScreenShareFps,
         mediaStreamRef, displayStreamRef,
         handleVoiceDisconnect, startDirectCall, handleStopScreenShare
     };
